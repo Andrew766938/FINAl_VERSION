@@ -1,10 +1,8 @@
 from pydantic import BaseModel
 
-from app.schemes.users import SUserGet
-
 
 class SRolesAdd(BaseModel):
-    title: str
+    name: str
 
 
 class SRoleGet(SRolesAdd):
@@ -12,4 +10,4 @@ class SRoleGet(SRolesAdd):
 
 
 class SRoleGetWithRels(SRoleGet):
-    users: list[SUserGet]
+    users: list["SUserGet"]

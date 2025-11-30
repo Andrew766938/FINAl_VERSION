@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, EmailStr
 
 from app.schemes.roles import SRoleGet
 
@@ -27,7 +27,7 @@ class SUserGet(SUserAdd):
 
 
 class SUserGetWithRels(SUserGet):
-    role: SRoleGet
+    role: "SRoleGet"
 
 
 class SUserPatch(BaseModel):
