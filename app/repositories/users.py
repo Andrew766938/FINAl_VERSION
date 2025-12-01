@@ -3,7 +3,8 @@ from sqlalchemy.orm import selectinload
 
 from app.models.users import UserModel
 from app.repositories.base import BaseRepository
-from app.schemes.users import SUserGet, SUserGetWithRels
+from app.schemes.users import SUserGet
+from app.schemes.relations_users_roles import SUserGetWithRels
 
 
 class UsersRepository(BaseRepository):
@@ -22,6 +23,6 @@ class UsersRepository(BaseRepository):
         model = result.scalars().one_or_none()
         if model is None:
             return None
-        print(model.role.name)
+
         result = SUserGetWithRels.model_validate(model, from_attributes=True)
         return result
