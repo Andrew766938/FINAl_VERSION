@@ -11,12 +11,12 @@
 
 body {
   font-family: 'Orbitron', monospace;
-  background: linear-gradient(135deg, #0a0e27 0%, #1a0b2e 50%, #16003b 100%);
-  color: #00ffff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff;
   min-height: 100vh;
   padding: 20px;
   overflow-x: hidden;
-  animation: bgPulse 10s ease-in-out infinite;
+    /* animation: bgPulse 10s ease-in-out infinite; */
 }
 
 @keyframes bgPulse {
@@ -36,11 +36,11 @@ h1 {
   margin-bottom: 40px;
   text-transform: uppercase;
   letter-spacing: 8px;
-  background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+    background: linear-gradient(90deg, #8b5cf6, #6366f1);
   background-size: 300% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: neonGlow 3s linear infinite, textShift 5s ease-in-out infinite;
+    /* animation: neonGlow 3s linear infinite, textShift 5s ease-in-out infinite; */
   text-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 40px rgba(255, 0, 255, 0.6);
   filter: drop-shadow(0 0 10px #00ffff);
 }
@@ -56,12 +56,12 @@ h1 {
 }
 
 section {
-  background: rgba(10, 14, 39, 0.8);
-  border: 2px solid #00ffff;
+    background: rgba(139, 92, 246, 0.1);
+    border: 2px solid rgba(139, 92, 246, 0.3);
   border-radius: 15px;
   padding: 30px;
   margin-bottom: 30px;
-  box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(255, 0, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
@@ -71,7 +71,7 @@ section::before {
   content: '';
   position: absolute;
   top: -2px; left: -2px; right: -2px; bottom: -2px;
-  background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ff00);
+    background: linear-gradient(45deg, #8b5cf6, #6366f1);
   border-radius: 15px;
   opacity: 0;
   z-index: -1;
@@ -84,7 +84,7 @@ section::before {
 }
 
 h2 {
-  color: #ff00ff;
+    color: #a78bfa;
   font-size: 2rem;
   margin-bottom: 20px;
   text-transform: uppercase;
