@@ -6,7 +6,7 @@ from app.schemes.comments import CommentCreate, CommentUpdate
 
 class CommentRepository:
     def __init__(self, session: AsyncSession):
-        self.session = session
+        self.session = session.session
 
     async def create_comment(self, comment_data: CommentCreate, user_id: int, post_id: int) -> CommentModel:
         db_comment = CommentModel(
