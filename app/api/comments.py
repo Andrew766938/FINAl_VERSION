@@ -42,9 +42,9 @@ async def get_comment(
 )
 async def get_post_comments(
     post_id: int,
+    db: DBDep,
     skip: int = 0,
     limit: int = 20,
-    db: DBDep,
 ):
     service = CommentService(db)
     return await service.get_post_comments(post_id, skip, limit)
