@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.database import get_session
-from app.api.dependencies import get_current_user
+from app.api.dependencies import DBDep, get_current_user
 from app.services.comments import CommentService
 from app.schemes.comments import CommentCreate, CommentUpdate, CommentResponse
 from app.models.users import UserModel
@@ -18,10 +17,10 @@ router = APIRouter(prefix="/comments", tags=["comments"])
 async def create_comment(
     post_id: int,
     comment_data: CommentCreate,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = CommentService(session)
+    service = CommentService(db)
     return await service.create_comment(comment_data, current_user.id, post_id)
 
 
@@ -31,9 +30,9 @@ async def create_comment(
 )
 async def get_comment(
     comment_id: int,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
 ):
-    service = CommentService(session)
+    service = CommentService(db)
     return await service.get_comment(comment_id)
 
 
@@ -45,9 +44,9 @@ async def get_post_comments(
     post_id: int,
     skip: int = 0,
     limit: int = 20,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
 ):
-    service = CommentService(session)
+    service = CommentService(db)
     return await service.get_post_comments(post_id, skip, limit)
 
 
@@ -58,10 +57,10 @@ async def get_post_comments(
 async def update_comment(
     comment_id: int,
     comment_data: CommentUpdate,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = CommentService(session)
+    service = CommentService(db)
     return await service.update_comment(comment_id, comment_data, current_user.id)
 
 
@@ -71,9 +70,9 @@ async def update_comment(
 )
 async def delete_comment(
     comment_id: int,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = CommentService(session)
+    service = CommentService(db)
     await service.delete_comment(comment_id, current_user.id)
     return None
