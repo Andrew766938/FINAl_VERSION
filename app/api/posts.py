@@ -40,9 +40,9 @@ async def get_post(
     response_model=list[PostResponse],
 )
 async def get_all_posts(
+    db: DBDep,
     skip: int = 0,
     limit: int = 10,
-    db: DBDep,
 ):
     service = PostService(db)
     return await service.get_all_posts(skip, limit)
@@ -54,9 +54,9 @@ async def get_all_posts(
 )
 async def get_user_posts(
     user_id: int,
+    db: DBDep,
     skip: int = 0,
     limit: int = 10,
-    db: DBDep,
 ):
     service = PostService(db)
     return await service.get_user_posts(user_id, skip, limit)
