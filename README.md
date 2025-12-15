@@ -70,16 +70,29 @@ uv sync
 
 ### 2. Настройка окружения
 
-Создайте файл `.env` в корне проекта:
+Создайте файл `.env` в корне проекта на основе `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Затем отредактируйте `.env` и заполните следующие переменные:
 
 ```env
-SECRET_KEY=your-secret-key-here
+# JWT Configuration
+SECRET_KEY=your-secret-key-here-change-this-in-production
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Database Configuration
 DB_NAME=blog.db
 ```
 
-### 3. Применение миграций
+**Важно!** Измените `SECRET_KEY` на что-нибудь безопасное в production!
+
+### 3. Применение миграций (опционально)
+
+Миграции БД применяются автоматически при первом запуске. Если нужно применить вручную:
 
 ```bash
 alembic upgrade head
