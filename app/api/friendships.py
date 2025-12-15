@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.database import get_session
-from app.api.dependencies import get_current_user
+from app.api.dependencies import DBDep, get_current_user
 from app.services.friendships import FriendshipService
 from app.schemes.friendships import FriendshipResponse
 from app.models.users import UserModel
@@ -17,10 +16,10 @@ router = APIRouter(prefix="/friends", tags=["friends"])
 )
 async def add_friend(
     friend_id: int,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = FriendshipService(session)
+    service = FriendshipService(db)
     return await service.add_friend(current_user.id, friend_id)
 
 
@@ -30,10 +29,10 @@ async def add_friend(
 )
 async def remove_friend(
     friend_id: int,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = FriendshipService(session)
+    service = FriendshipService(db)
     await service.remove_friend(current_user.id, friend_id)
     return None
 
@@ -45,10 +44,10 @@ async def remove_friend(
 async def my_friends(
     skip: int = 0,
     limit: int = 20,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = FriendshipService(session)
+    service = FriendshipService(db)
     return await service.get_user_friends(current_user.id, skip, limit)
 
 
@@ -59,10 +58,10 @@ async def my_friends(
 async def my_followers(
     skip: int = 0,
     limit: int = 20,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = FriendshipService(session)
+    service = FriendshipService(db)
     return await service.get_user_followers(current_user.id, skip, limit)
 
 
@@ -72,8 +71,8 @@ async def my_followers(
 )
 async def is_friend(
     friend_id: int,
-    session: AsyncSession = Depends(get_session),
+    db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    service = FriendshipService(session)
+    service = FriendshipService(db)
     return await service.is_friend(current_user.id, friend_id)
