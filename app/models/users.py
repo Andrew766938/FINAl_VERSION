@@ -6,6 +6,10 @@ from app.database.database import Base
 
 if TYPE_CHECKING:
     from app.models.roles import RoleModel
+    from app.models.posts import PostModel
+    from app.models.comments import CommentModel
+    from app.models.likes import LikeModel
+    from app.models.friendships import FriendshipModel
 
 
 class UserModel(Base):
@@ -17,3 +21,9 @@ class UserModel(Base):
 
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
     role: Mapped["RoleModel"] = relationship(back_populates="users")
+    
+    posts: Mapped[list["PostModel"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    comments: Mapped[list["CommentModel"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    likes: Mapped[list["LikeModel"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    friendships_initiated: Mapped[list["FriendshipModel"]] = relationship(foreign_keys="FriendshipModel.user_id", back_populates="user", cascade="all, delete-orphan")
+    friendships_received: Mapped[list["FriendshipModel"]] = relationship(foreign_keys="FriendshipModel.friend_id", back_populates="friend", cascade="all, delete-orphan")
