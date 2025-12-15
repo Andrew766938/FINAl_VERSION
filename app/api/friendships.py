@@ -42,10 +42,10 @@ async def remove_friend(
     response_model=list[FriendshipResponse],
 )
 async def my_friends(
-    skip: int = 0,
-    limit: int = 20,
     db: DBDep,
     current_user: UserModel = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 20,
 ):
     service = FriendshipService(db)
     return await service.get_user_friends(current_user.id, skip, limit)
@@ -56,10 +56,10 @@ async def my_friends(
     response_model=list[FriendshipResponse],
 )
 async def my_followers(
-    skip: int = 0,
-    limit: int = 20,
     db: DBDep,
     current_user: UserModel = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 20,
 ):
     service = FriendshipService(db)
     return await service.get_user_followers(current_user.id, skip, limit)
