@@ -11,6 +11,7 @@ from app.exceptions.auth import (
 )
 from app.services.auth import AuthService
 from app.database.db_manager import DBManager
+from app.models.users import UserModel
 
 
 class PaginationParams(BaseModel):
@@ -45,3 +46,13 @@ async def get_db():
 
 
 DBDep = Annotated[DBManager, Depends(get_db)]
+
+
+async def get_current_user(
+    db: DBDep,
+    user_id: int = Depends(get_current_user_id),
+) -> UserModel:
+    user = await db.users.get_one_or_none(id=user_id)
+    if not user:
+        raise InvalidTokenHTTPError
+    return user
