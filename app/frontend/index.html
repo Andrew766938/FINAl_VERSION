@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Блог</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #555;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        input, textarea, button {
+            margin: 4px 0;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:active {
+            background-color: #004085;
+        }
+        .row {
+            margin-bottom: 12px;
+        }
+        .post {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .post > div:first-child {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .post > div:nth-child(2) {
+            margin: 10px 0;
+            color: #666;
+        }
+        .post > div:nth-child(3) {
+            font-size: 12px;
+            color: #999;
+            margin: 5px 0;
+        }
+        .comments {
+            margin-top: 15px;
+            padding: 10px;
+            border-left: 3px solid #007bff;
+            background-color: #f9f9f9;
+        }
+        .comment {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: white;
+            border-radius: 3px;
+        }
+        .friend {
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+        }
+        #token {
+            font-size: 11px;
+            word-break: break-all;
+            background-color: #f0f0f0;
+            padding: 5px;
+            border-radius: 3px;
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📝 Блог</h1>
+
+    <section>
+        <h2>🔐 Авторизация</h2>
+        <div class="row">
+            <input id="register-name" placeholder="Имя" />
+            <input id="register-email" placeholder="Email" />
+            <input id="register-password" placeholder="Пароль" type="password" />
+            <button onclick="register()">Регистрация</button>
+        </div>
+        <div class="row">
+            <input id="login-email" placeholder="Email" />
+            <input id="login-password" placeholder="Пароль" type="password" />
+            <button onclick="login()">Войти</button>
+        </div>
+        <div class="row">
+            Ваш токен:
+            <span id="token"></span>
+        </div>
+    </section>
+
+    <section>
+        <h2>✍️ Посты</h2>
+        <div class="row">
+            <input id="post-title" placeholder="Заголовок" />
+            <br />
+            <textarea id="post-content" placeholder="Текст поста" rows="3" cols="60"></textarea>
+            <br />
+            <button onclick="createPost()">Создать пост</button>
+            <button onclick="loadPosts()">Обновить список постов</button>
+        </div>
+        <div id="posts"></div>
+    </section>
+
+    <section>
+        <h2>👥 Друзья</h2>
+        <div class="row">
+            <input id="friend-id" placeholder="ID пользователя" />
+            <button onclick="addFriend()">Добавить в друзья</button>
+        </div>
+        <div class="row">
+            <button onclick="loadMyFriends()">Мои друзья</button>
+            <button onclick="loadMyFollowers()">Мои подписчики</button>
+        </div>
+        <div id="friends"></div>
+    </section>
+
+    <script>
+        const API_BASE = "";
+
+        function getToken() {
+            return localStorage.getItem("access_token") || "";
+        }
+
+        function setToken(token) {
+            localStorage.setItem("access_token", token);
+            document.getElementById("token").innerText = token;
+        }
+
+        function authHeaders() {
+            const token = getToken();
+            if (!token) return {};
+            return { "Authorization": "Bearer " + token };
+        }
+
+        async function register() {
+            const name = document.getElementById("register-name").value;
+            const email = document.getElementById("register-email").value;
+            const password = document.getElementById("register-password").value;
+
+            if (!name || !email || !password) {
+                alert("Заполните все поля");
+                return;
+            }
+
+            try {
+                const resp = await fetch(API_BASE + "/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, password })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    alert("Ошибка регистрации: " + (err.detail || "Неизвестная ошибка"));
+                    return;
+                }
+                alert("Регистрация успешна!");
+                document.getElementById("register-name").value = "";
+                document.getElementById("register-email").value = "";
+                document.getElementById("register-password").value = "";
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById("login-email").value;
+            const password = document.getElementById("login-password").value;
+
+            if (!email || !password) {
+                alert("Заполните email и пароль");
+                return;
+            }
+
+            const params = new URLSearchParams();
+            params.append("username", email);
+            params.append("password", password);
+
+            try {
+                const resp = await fetch(API_BASE + "/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: params
+                });
+                if (!resp.ok) {
+                    alert("Неверные учетные данные");
+                    return;
+                }
+                const data = await resp.json();
+                setToken(data.access_token);
+                alert("Вы вошли в систему!");
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function createPost() {
+            const title = document.getElementById("post-title").value;
+            const content = document.getElementById("post-content").value;
+
+            if (!title || !content) {
+                alert("Заполните заголовок и текст поста");
+                return;
+            }
+
+            try {
+                const resp = await fetch(API_BASE + "/posts/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...authHeaders()
+                    },
+                    body: JSON.stringify({ title, content })
+                });
+                if (!resp.ok) {
+                    alert("Ошибка создания поста");
+                    return;
+                }
+                document.getElementById("post-title").value = "";
+                document.getElementById("post-content").value = "";
+                await loadPosts();
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function loadPosts() {
+            const container = document.getElementById("posts");
+            container.innerHTML = "⏳ Загрузка постов...";
+            try {
+                const resp = await fetch(API_BASE + "/posts/");
+                if (!resp.ok) {
+                    container.innerHTML = "Ошибка загрузки постов";
+                    return;
+                }
+                const posts = await resp.json();
+                container.innerHTML = "";
+                if (posts.length === 0) {
+                    container.innerHTML = "<p>Нет постов</p>";
+                    return;
+                }
+                posts.forEach(p => {
+                    const div = document.createElement("div");
+                    div.className = "post";
+                    const dateStr = new Date(p.created_at).toLocaleString('ru-RU');
+                    div.innerHTML = `
+                        <div>${p.title} (ID: ${p.id})</div>
+                        <div>${p.content}</div>
+                        <div>Автор: ID ${p.user_id} | Лайков: ${p.likes_count} | ${dateStr}</div>
+                        <div>
+                            <button onclick="likePost(${p.id})">👍 Лайк</button>
+                            <button onclick="unlikePost(${p.id})">👎 Убрать лайк</button>
+                            <button onclick="deletePost(${p.id})" style="background-color: #dc3545;">🗑️ Удалить</button>
+                        </div>
+                        <div class="comments" id="comments-${p.id}">
+                            <div>
+                                <textarea id="comment-input-${p.id}" rows="2" cols="40" placeholder="Добавьте комментарий..."></textarea>
+                                <br/>
+                                <button onclick="createComment(${p.id})">Добавить комментарий</button>
+                                <button onclick="loadComments(${p.id})">Обновить комментарии</button>
+                            </div>
+                            <div id="comments-list-${p.id}"></div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                    loadComments(p.id);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = "Ошибка запроса";
+            }
+        }
+
+        async function deletePost(id) {
+            if (!confirm("Вы уверены, что хотите удалить этот пост?")) return;
+            try {
+                const resp = await fetch(API_BASE + "/posts/" + id, {
+                    method: "DELETE",
+                    headers: authHeaders()
+                });
+                if (!resp.ok) {
+                    alert("Ошибка удаления поста");
+                    return;
+                }
+                await loadPosts();
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function likePost(id) {
+            try {
+                const resp = await fetch(API_BASE + "/likes/posts/" + id, {
+                    method: "POST",
+                    headers: authHeaders()
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    alert("Ошибка: " + (err.detail || "Неизвестная ошибка"));
+                    return;
+                }
+                await loadPosts();
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function unlikePost(id) {
+            try {
+                const resp = await fetch(API_BASE + "/likes/posts/" + id, {
+                    method: "DELETE",
+                    headers: authHeaders()
+                });
+                if (!resp.ok) {
+                    alert("Ошибка удаления лайка");
+                    return;
+                }
+                await loadPosts();
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function createComment(postId) {
+            const text = document.getElementById("comment-input-" + postId).value;
+            if (!text) {
+                alert("Напишите комментарий");
+                return;
+            }
+            try {
+                const resp = await fetch(API_BASE + `/comments/posts/${postId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...authHeaders()
+                    },
+                    body: JSON.stringify({ content: text })
+                });
+                if (!resp.ok) {
+                    alert("Ошибка добавления комментария");
+                    return;
+                }
+                document.getElementById("comment-input-" + postId).value = "";
+                await loadComments(postId);
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function loadComments(postId) {
+            const container = document.getElementById("comments-list-" + postId);
+            if (!container) return;
+            container.innerHTML = "Загрузка комментариев...";
+            try {
+                const resp = await fetch(API_BASE + `/comments/posts/${postId}`);
+                if (!resp.ok) {
+                    container.innerHTML = "Ошибка загрузки комментариев";
+                    return;
+                }
+                const comments = await resp.json();
+                container.innerHTML = "";
+                if (comments.length === 0) {
+                    container.innerHTML = "<p style='font-size: 12px; color: #999;'>Комментариев нет</p>";
+                    return;
+                }
+                comments.forEach(c => {
+                    const div = document.createElement("div");
+                    div.className = "comment";
+                    const dateStr = new Date(c.created_at).toLocaleString('ru-RU');
+                    div.innerHTML = `<b>Пользователь ${c.user_id}</b> (${dateStr}): ${c.content}`;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = "Ошибка запроса";
+            }
+        }
+
+        async function addFriend() {
+            const friendId = document.getElementById("friend-id").value;
+            if (!friendId) {
+                alert("Введите ID пользователя");
+                return;
+            }
+            try {
+                const resp = await fetch(API_BASE + `/friends/${friendId}`, {
+                    method: "POST",
+                    headers: authHeaders()
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    alert("Ошибка: " + (err.detail || "Неизвестная ошибка"));
+                    return;
+                }
+                alert("Пользователь добавлен в друзья!");
+                document.getElementById("friend-id").value = "";
+                await loadMyFriends();
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        async function loadMyFriends() {
+            const container = document.getElementById("friends");
+            container.innerHTML = "⏳ Загрузка друзей...";
+            try {
+                const resp = await fetch(API_BASE + "/friends/me", {
+                    headers: authHeaders()
+                });
+                if (!resp.ok) {
+                    container.innerHTML = "Ошибка загрузки (возможно, вы не авторизованы)";
+                    return;
+                }
+                const friends = await resp.json();
+                container.innerHTML = "<h3>Мои друзья</h3>";
+                if (friends.length === 0) {
+                    container.innerHTML += "<p>У вас еще нет друзей</p>";
+                    return;
+                }
+                friends.forEach(f => {
+                    const div = document.createElement("div");
+                    div.className = "friend";
+                    const dateStr = new Date(f.created_at).toLocaleString('ru-RU');
+                    div.innerHTML = `
+                        ID друга: <b>${f.friend_id}</b> (Добавлен: ${dateStr})
+                        <button onclick="removeFriend(${f.friend_id})" style="background-color: #dc3545; margin-left: 10px;">Удалить</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = "Ошибка запроса";
+            }
+        }
+
+        async function loadMyFollowers() {
+            const container = document.getElementById("friends");
+            container.innerHTML = "⏳ Загрузка подписчиков...";
+            try {
+                const resp = await fetch(API_BASE + "/friends/followers", {
+                    headers: authHeaders()
+                });
+                if (!resp.ok) {
+                    container.innerHTML = "Ошибка загрузки (возможно, вы не авторизованы)";
+                    return;
+                }
+                const followers = await resp.json();
+                container.innerHTML = "<h3>Мои подписчики</h3>";
+                if (followers.length === 0) {
+                    container.innerHTML += "<p>У вас еще нет подписчиков</p>";
+                    return;
+                }
+                followers.forEach(f => {
+                    const div = document.createElement("div");
+                    div.className = "friend";
+                    const dateStr = new Date(f.created_at).toLocaleString('ru-RU');
+                    div.innerHTML = `ID пользователя: <b>${f.user_id}</b> (Подписан: ${dateStr})`;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                console.error(e);
+                container.innerHTML = "Ошибка запроса";
+            }
+        }
+
+        async function removeFriend(friendId) {
+            if (!confirm("Удалить этого друга?")) return;
+            try {
+                const resp = await fetch(API_BASE + `/friends/${friendId}`, {
+                    method: "DELETE",
+                    headers: authHeaders()
+                });
+                if (!resp.ok) {
+                    alert("Ошибка удаления из друзей");
+                    return;
+                }
+                await loadMyFriends();
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка запроса");
+            }
+        }
+
+        window.onload = () => {
+            const stored = getToken();
+            if (stored) document.getElementById("token").innerText = stored;
+            loadPosts();
+        };
+    </script>
+</body>
+</html>
