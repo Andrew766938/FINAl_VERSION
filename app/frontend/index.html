@@ -2,145 +2,269 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8" />
-    <title>Блог</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Мой Блог</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: sans-serif;
-            max-width: 1000px;
-            margin: 0 auto;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
-            background-color: #f5f5f5;
+            color: #333;
         }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
         h1 {
-            color: #333;
-        }
-        h2 {
-            margin-top: 30px;
-            color: #555;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-        }
-        input, textarea, button {
-            margin: 4px 0;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            background-color: #007bff;
+            text-align: center;
             color: white;
-            cursor: pointer;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            animation: fadeIn 1s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.95);
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            font-size: 1.3em;
+            margin-right: 12px;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 14px 18px;
+            margin: 8px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 15px rgba(102,126,234,0.3);
+            transform: scale(1.01);
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border: none;
+            padding: 12px 28px;
+            margin: 5px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.4);
         }
+        
         button:hover {
-            background-color: #0056b3;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(102,126,234,0.6);
         }
+        
         button:active {
-            background-color: #004085;
+            transform: translateY(0);
         }
-        .row {
-            margin-bottom: 12px;
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
         .post {
-            border: 1px solid #ddd;
-            margin: 10px 0;
-            padding: 15px;
-            background-color: white;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 30%, #e0c3fc 70%, #8ec5fc 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+            transition: all 0.3s;
         }
-        .post > div:first-child {
-            font-size: 18px;
-            font-weight: bold;
+        
+        .post:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+        }
+        
+        .post h3 {
             color: #333;
+            margin-bottom: 12px;
+            font-size: 1.4em;
         }
-        .post > div:nth-child(2) {
-            margin: 10px 0;
+        
+        .post-meta {
             color: #666;
+            font-size: 0.9em;
+            margin: 10px 0;
+            font-weight: 600;
         }
-        .post > div:nth-child(3) {
-            font-size: 12px;
-            color: #999;
-            margin: 5px 0;
-        }
+        
         .comments {
             margin-top: 15px;
-            padding: 10px;
-            border-left: 3px solid #007bff;
-            background-color: #f9f9f9;
+            padding: 18px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
         }
+        
         .comment {
-            margin: 5px 0;
-            padding: 5px;
-            background-color: white;
-            border-radius: 3px;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
+        
         .friend {
-            border: 1px solid #ddd;
-            margin: 5px 0;
-            padding: 10px;
-            background-color: white;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 12px;
+            padding: 18px;
+            margin: 12px 0;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
         }
-        #token {
-            font-size: 11px;
+        
+        .token-display {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
             word-break: break-all;
-            background-color: #f0f0f0;
-            padding: 5px;
-            border-radius: 3px;
-            display: block;
-            margin-top: 5px;
+            color: #495057;
+            margin: 12px 0;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 2px solid #e0e0e0;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            .card { padding: 20px; }
         }
     </style>
 </head>
 <body>
-    <h1>📝 Блог</h1>
+    <div class="container">
+        <h1>🚀 Мой Яркий Блог</h1>
+        <p class="subtitle">Делись мыслями, находи друзей, вдохновляйся!</p>
 
-    <section>
-        <h2>🔐 Авторизация</h2>
-        <div class="row">
-            <input id="register-name" placeholder="Имя" />
-            <input id="register-email" placeholder="Email" />
-            <input id="register-password" placeholder="Пароль" type="password" />
-            <button onclick="register()">Регистрация</button>
+        <div class="card">
+            <h2><span class="section-icon">🔐</span>Авторизация</h2>
+            <div>
+                <input id="register-name" placeholder="✏️ Ваше имя" />
+                <input id="register-email" placeholder="📧 Email" />
+                <input id="register-password" placeholder="🔒 Пароль" type="password" />
+                <button onclick="register()" class="btn-success">✅ Регистрация</button>
+            </div>
+            <hr>
+            <div>
+                <input id="login-email" placeholder="📧 Email" />
+                <input id="login-password" placeholder="🔒 Пароль" type="password" />
+                <button onclick="login()" class="btn-success">🚪 Войти</button>
+            </div>
+            <div class="token-display">
+                <strong>🎫 Токен:</strong> <span id="token">Не авторизован</span>
+            </div>
         </div>
-        <div class="row">
-            <input id="login-email" placeholder="Email" />
-            <input id="login-password" placeholder="Пароль" type="password" />
-            <button onclick="login()">Войти</button>
-        </div>
-        <div class="row">
-            Ваш токен:
-            <span id="token"></span>
-        </div>
-    </section>
 
-    <section>
-        <h2>✍️ Посты</h2>
-        <div class="row">
-            <input id="post-title" placeholder="Заголовок" />
-            <br />
-            <textarea id="post-content" placeholder="Текст поста" rows="3" cols="60"></textarea>
-            <br />
-            <button onclick="createPost()">Создать пост</button>
-            <button onclick="loadPosts()">Обновить список постов</button>
+        <div class="card">
+            <h2><span class="section-icon">📝</span>Посты</h2>
+            <div>
+                <input id="post-title" placeholder="📌 Заголовок поста" />
+                <textarea id="post-content" placeholder="✍️ Расскажите что-нибудь интересное..." rows="4"></textarea>
+                <div class="action-buttons">
+                    <button onclick="createPost()" class="btn-success">➕ Создать</button>
+                    <button onclick="loadPosts()">🔄 Обновить</button>
+                </div>
+            </div>
+            <div id="posts" style="margin-top: 25px;"></div>
         </div>
-        <div id="posts"></div>
-    </section>
 
-    <section>
-        <h2>👥 Друзья</h2>
-        <div class="row">
-            <input id="friend-id" placeholder="ID пользователя" />
-            <button onclick="addFriend()">Добавить в друзья</button>
+        <div class="card">
+            <h2><span class="section-icon">👥</span>Друзья</h2>
+            <div>
+                <input id="friend-id" placeholder="🆔 ID пользователя" />
+                <button onclick="addFriend()" class="btn-success">➕ Добавить</button>
+            </div>
+            <div class="action-buttons">
+                <button onclick="loadMyFriends()">👫 Мои друзья</button>
+                <button onclick="loadMyFollowers()">📊 Подписчики</button>
+            </div>
+            <div id="friends" style="margin-top: 20px;"></div>
         </div>
-        <div class="row">
-            <button onclick="loadMyFriends()">Мои друзья</button>
-            <button onclick="loadMyFollowers()">Мои подписчики</button>
-        </div>
-        <div id="friends"></div>
-    </section>
+    </div>
 
     <script>
         const API_BASE = "";
@@ -151,7 +275,7 @@
 
         function setToken(token) {
             localStorage.setItem("access_token", token);
-            document.getElementById("token").innerText = token;
+            document.getElementById("token").innerText = token || "Не авторизован";
         }
 
         function authHeaders() {
@@ -165,11 +289,6 @@
             const email = document.getElementById("register-email").value;
             const password = document.getElementById("register-password").value;
 
-            if (!name || !email || !password) {
-                alert("Заполните все поля");
-                return;
-            }
-
             try {
                 const resp = await fetch(API_BASE + "/auth/register", {
                     method: "POST",
@@ -177,29 +296,19 @@
                     body: JSON.stringify({ name, email, password })
                 });
                 if (!resp.ok) {
-                    const err = await resp.json();
-                    alert("Ошибка регистрации: " + (err.detail || "Неизвестная ошибка"));
+                    alert("❌ Ошибка регистрации");
                     return;
                 }
-                alert("Регистрация успешна!");
-                document.getElementById("register-name").value = "";
-                document.getElementById("register-email").value = "";
-                document.getElementById("register-password").value = "";
+                alert("✅ Регистрация успешна!");
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
         async function login() {
             const email = document.getElementById("login-email").value;
             const password = document.getElementById("login-password").value;
-
-            if (!email || !password) {
-                alert("Заполните email и пароль");
-                return;
-            }
-
             const params = new URLSearchParams();
             params.append("username", email);
             params.append("password", password);
@@ -211,26 +320,21 @@
                     body: params
                 });
                 if (!resp.ok) {
-                    alert("Неверные учетные данные");
+                    alert("❌ Ошибка входа");
                     return;
                 }
                 const data = await resp.json();
                 setToken(data.access_token);
-                alert("Вы вошли в систему!");
+                alert("✅ Вход успешен!");
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
         async function createPost() {
             const title = document.getElementById("post-title").value;
             const content = document.getElementById("post-content").value;
-
-            if (!title || !content) {
-                alert("Заполните заголовок и текст поста");
-                return;
-            }
 
             try {
                 const resp = await fetch(API_BASE + "/posts/", {
@@ -242,7 +346,7 @@
                     body: JSON.stringify({ title, content })
                 });
                 if (!resp.ok) {
-                    alert("Ошибка создания поста");
+                    alert("❌ Ошибка создания поста");
                     return;
                 }
                 document.getElementById("post-title").value = "";
@@ -250,46 +354,40 @@
                 await loadPosts();
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
         async function loadPosts() {
             const container = document.getElementById("posts");
-            container.innerHTML = "⏳ Загрузка постов...";
+            container.innerHTML = "⏳ Загрузка...";
             try {
                 const resp = await fetch(API_BASE + "/posts/");
                 if (!resp.ok) {
-                    container.innerHTML = "Ошибка загрузки постов";
+                    container.innerHTML = "❌ Ошибка загрузки";
                     return;
                 }
                 const posts = await resp.json();
                 container.innerHTML = "";
-                if (posts.length === 0) {
-                    container.innerHTML = "<p>Нет постов</p>";
-                    return;
-                }
                 posts.forEach(p => {
                     const div = document.createElement("div");
                     div.className = "post";
-                    const dateStr = new Date(p.created_at).toLocaleString('ru-RU');
                     div.innerHTML = `
-                        <div>${p.title} (ID: ${p.id})</div>
+                        <h3>📝 ${p.title}</h3>
                         <div>${p.content}</div>
-                        <div>Автор: ID ${p.user_id} | Лайков: ${p.likes_count} | ${dateStr}</div>
-                        <div>
+                        <div class="post-meta">👤 Автор: ${p.user_id} | ❤️ ${p.likes_count} лайков</div>
+                        <div class="action-buttons">
                             <button onclick="likePost(${p.id})">👍 Лайк</button>
-                            <button onclick="unlikePost(${p.id})">👎 Убрать лайк</button>
-                            <button onclick="deletePost(${p.id})" style="background-color: #dc3545;">🗑️ Удалить</button>
+                            <button onclick="unlikePost(${p.id})" class="btn-warning">👎 Убрать</button>
+                            <button onclick="deletePost(${p.id})" class="btn-danger">🗑️ Удалить</button>
                         </div>
                         <div class="comments" id="comments-${p.id}">
                             <div>
-                                <textarea id="comment-input-${p.id}" rows="2" cols="40" placeholder="Добавьте комментарий..."></textarea>
-                                <br/>
-                                <button onclick="createComment(${p.id})">Добавить комментарий</button>
-                                <button onclick="loadComments(${p.id})">Обновить комментарии</button>
+                                <textarea id="comment-input-${p.id}" rows="2" placeholder="💬 Ваш комментарий..."></textarea>
+                                <button onclick="createComment(${p.id})" class="btn-success">➕ Комментарий</button>
+                                <button onclick="loadComments(${p.id})">🔄 Обновить</button>
                             </div>
-                            <div id="comments-list-${p.id}"></div>
+                            <div id="comments-list-${p.id}" style="margin-top: 10px;"></div>
                         </div>
                     `;
                     container.appendChild(div);
@@ -297,25 +395,25 @@
                 });
             } catch (e) {
                 console.error(e);
-                container.innerHTML = "Ошибка запроса";
+                container.innerHTML = "❌ Ошибка запроса";
             }
         }
 
         async function deletePost(id) {
-            if (!confirm("Вы уверены, что хотите удалить этот пост?")) return;
+            if (!confirm("Удалить пост?")) return;
             try {
                 const resp = await fetch(API_BASE + "/posts/" + id, {
                     method: "DELETE",
                     headers: authHeaders()
                 });
                 if (!resp.ok) {
-                    alert("Ошибка удаления поста");
+                    alert("❌ Ошибка удаления");
                     return;
                 }
                 await loadPosts();
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
@@ -326,14 +424,13 @@
                     headers: authHeaders()
                 });
                 if (!resp.ok) {
-                    const err = await resp.json();
-                    alert("Ошибка: " + (err.detail || "Неизвестная ошибка"));
+                    alert("❌ Ошибка лайка");
                     return;
                 }
                 await loadPosts();
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
@@ -344,22 +441,18 @@
                     headers: authHeaders()
                 });
                 if (!resp.ok) {
-                    alert("Ошибка удаления лайка");
+                    alert("❌ Ошибка");
                     return;
                 }
                 await loadPosts();
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
         async function createComment(postId) {
             const text = document.getElementById("comment-input-" + postId).value;
-            if (!text) {
-                alert("Напишите комментарий");
-                return;
-            }
             try {
                 const resp = await fetch(API_BASE + `/comments/posts/${postId}`, {
                     method: "POST",
@@ -370,155 +463,133 @@
                     body: JSON.stringify({ content: text })
                 });
                 if (!resp.ok) {
-                    alert("Ошибка добавления комментария");
+                    alert("❌ Ошибка");
                     return;
                 }
                 document.getElementById("comment-input-" + postId).value = "";
                 await loadComments(postId);
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
         async function loadComments(postId) {
             const container = document.getElementById("comments-list-" + postId);
             if (!container) return;
-            container.innerHTML = "Загрузка комментариев...";
+            container.innerHTML = "⏳...";
             try {
                 const resp = await fetch(API_BASE + `/comments/posts/${postId}`);
                 if (!resp.ok) {
-                    container.innerHTML = "Ошибка загрузки комментариев";
+                    container.innerHTML = "❌ Ошибка";
                     return;
                 }
                 const comments = await resp.json();
                 container.innerHTML = "";
-                if (comments.length === 0) {
-                    container.innerHTML = "<p style='font-size: 12px; color: #999;'>Комментариев нет</p>";
-                    return;
-                }
                 comments.forEach(c => {
                     const div = document.createElement("div");
                     div.className = "comment";
-                    const dateStr = new Date(c.created_at).toLocaleString('ru-RU');
-                    div.innerHTML = `<b>Пользователь ${c.user_id}</b> (${dateStr}): ${c.content}`;
+                    div.innerHTML = `<strong>👤 ${c.user_id}:</strong> ${c.content}`;
                     container.appendChild(div);
                 });
             } catch (e) {
                 console.error(e);
-                container.innerHTML = "Ошибка запроса";
+                container.innerHTML = "❌ Ошибка";
             }
         }
 
         async function addFriend() {
             const friendId = document.getElementById("friend-id").value;
-            if (!friendId) {
-                alert("Введите ID пользователя");
-                return;
-            }
             try {
                 const resp = await fetch(API_BASE + `/friends/${friendId}`, {
                     method: "POST",
                     headers: authHeaders()
                 });
                 if (!resp.ok) {
-                    const err = await resp.json();
-                    alert("Ошибка: " + (err.detail || "Неизвестная ошибка"));
+                    alert("❌ Ошибка");
                     return;
                 }
-                alert("Пользователь добавлен в друзья!");
-                document.getElementById("friend-id").value = "";
+                alert("✅ Добавлен в друзья!");
                 await loadMyFriends();
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
         async function loadMyFriends() {
             const container = document.getElementById("friends");
-            container.innerHTML = "⏳ Загрузка друзей...";
+            container.innerHTML = "⏳ Загрузка...";
             try {
                 const resp = await fetch(API_BASE + "/friends/me", {
                     headers: authHeaders()
                 });
                 if (!resp.ok) {
-                    container.innerHTML = "Ошибка загрузки (возможно, вы не авторизованы)";
+                    container.innerHTML = "❌ Ошибка загрузки";
                     return;
                 }
                 const friends = await resp.json();
-                container.innerHTML = "<h3>Мои друзья</h3>";
-                if (friends.length === 0) {
-                    container.innerHTML += "<p>У вас еще нет друзей</p>";
-                    return;
-                }
+                container.innerHTML = "<h3>👫 Мои друзья</h3>";
                 friends.forEach(f => {
                     const div = document.createElement("div");
                     div.className = "friend";
-                    const dateStr = new Date(f.created_at).toLocaleString('ru-RU');
                     div.innerHTML = `
-                        ID друга: <b>${f.friend_id}</b> (Добавлен: ${dateStr})
-                        <button onclick="removeFriend(${f.friend_id})" style="background-color: #dc3545; margin-left: 10px;">Удалить</button>
+                        👤 Пользователь: ${f.user_id} → 🤝 Друг: ${f.friend_id}
+                        <button onclick="removeFriend(${f.friend_id})" class="btn-danger">❌ Удалить</button>
                     `;
                     container.appendChild(div);
                 });
             } catch (e) {
                 console.error(e);
-                container.innerHTML = "Ошибка запроса";
+                container.innerHTML = "❌ Ошибка запроса";
             }
         }
 
         async function loadMyFollowers() {
             const container = document.getElementById("friends");
-            container.innerHTML = "⏳ Загрузка подписчиков...";
+            container.innerHTML = "⏳ Загрузка...";
             try {
                 const resp = await fetch(API_BASE + "/friends/followers", {
                     headers: authHeaders()
                 });
                 if (!resp.ok) {
-                    container.innerHTML = "Ошибка загрузки (возможно, вы не авторизованы)";
+                    container.innerHTML = "❌ Ошибка";
                     return;
                 }
                 const followers = await resp.json();
-                container.innerHTML = "<h3>Мои подписчики</h3>";
-                if (followers.length === 0) {
-                    container.innerHTML += "<p>У вас еще нет подписчиков</p>";
-                    return;
-                }
+                container.innerHTML = "<h3>📊 Подписчики</h3>";
                 followers.forEach(f => {
                     const div = document.createElement("div");
                     div.className = "friend";
-                    const dateStr = new Date(f.created_at).toLocaleString('ru-RU');
-                    div.innerHTML = `ID пользователя: <b>${f.user_id}</b> (Подписан: ${dateStr})`;
+                    div.innerHTML = `👤 ${f.user_id} → 👥 ${f.friend_id}`;
                     container.appendChild(div);
                 });
             } catch (e) {
                 console.error(e);
-                container.innerHTML = "Ошибка запроса";
+                container.innerHTML = "❌ Ошибка";
             }
         }
 
         async function removeFriend(friendId) {
-            if (!confirm("Удалить этого друга?")) return;
             try {
                 const resp = await fetch(API_BASE + `/friends/${friendId}`, {
                     method: "DELETE",
                     headers: authHeaders()
                 });
                 if (!resp.ok) {
-                    alert("Ошибка удаления из друзей");
+                    alert("❌ Ошибка");
                     return;
                 }
                 await loadMyFriends();
             } catch (e) {
                 console.error(e);
-                alert("Ошибка запроса");
+                alert("❌ Ошибка запроса");
             }
         }
 
         window.onload = () => {
             const stored = getToken();
-            if (stored) document.getElementById("token").innerText = stored;
+            if (stored) setToken(stored);
             loadPosts();
         };
     </script>
