@@ -6,7 +6,7 @@ from app.schemes.posts import PostCreate, PostUpdate
 
 class PostRepository:
     def __init__(self, session: AsyncSession):
-        self.session = session.session
+        self.session = session
 
     async def create_post(self, post_data: PostCreate, user_id: int) -> PostModel:
         db_post = PostModel(
