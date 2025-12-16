@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 class SRoleAdd(BaseModel):
     name: str
+    description: str | None = None
 
 
 class SRoleGet(SRoleAdd):
