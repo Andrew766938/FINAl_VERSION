@@ -2,16 +2,14 @@ import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    SECRET_KEY: str
-    ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
-    DB_NAME: str
+    DB_NAME: str = "betony.db"
+    SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
-    )
-
-    model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
+        env_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"),
+        extra="ignore"  # Ignore extra fields
     )
     
     @property
@@ -23,4 +21,13 @@ class Settings(BaseSettings):
         return {"secret_key": self.SECRET_KEY, "algorithm": self.ALGORITHM}
 
 
-settings = Settings()
+try:
+    settings = Settings()
+except Exception as e:
+    print(f"Warning: Could not load settings from .env, using defaults: {e}")
+    settings = Settings(
+        DB_NAME="betony.db",
+        SECRET_KEY="your-secret-key-change-this-in-production",
+        ALGORITHM="HS256",
+        ACCESS_TOKEN_EXPIRE_MINUTES=30
+    )
