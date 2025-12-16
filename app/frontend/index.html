@@ -833,7 +833,7 @@
         const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password })
+          body: JSON.stringify({ name: username, email, password })
         });
         
         if (response.ok) {
@@ -854,11 +854,12 @@
       document.getElementById('authScreen').style.display = 'none';
       document.getElementById('appScreen').classList.add('active');
       
-      const initials = (currentUser.username || 'U').substring(0, 2).toUpperCase();
-      document.getElementById('currentUserName').textContent = currentUser.username;
+      const username = currentUser.username || 'User';
+      const initials = username.substring(0, 2).toUpperCase();
+      document.getElementById('currentUserName').textContent = username;
       document.getElementById('userAvatar').textContent = initials;
       document.getElementById('profileAvatar').textContent = initials;
-      document.getElementById('profileName').textContent = currentUser.username;
+      document.getElementById('profileName').textContent = username;
       document.getElementById('profileEmail').textContent = currentUser.email;
       
       loadPosts();
@@ -966,8 +967,6 @@
           document.getElementById('postContent').value = '';
           showAlert('success', 'Пост успешно создан!');
           loadPosts();
-        } else {
-          showAlert('error', 'Ошибка при создании поста');
         }
       } catch (error) {
         showAlert('error', 'Ошибка: ' + error.message);
