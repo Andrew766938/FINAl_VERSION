@@ -13,5 +13,6 @@ class RoleModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    description: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     users: Mapped[list["UserModel"]] = relationship(back_populates="role")
