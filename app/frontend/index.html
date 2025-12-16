@@ -1,383 +1,568 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>✅ Blog</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #333;
-      min-height: 100vh;
-      padding: 40px 20px;
-    }
-    
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    
-    h1 {
-      text-align: center;
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 40px;
-      color: #ffffff;
-    }
-    
-    .post-form {
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      margin-bottom: 40px;
-    }
-    
-    .post-form h2 {
-      font-size: 1.5rem;
-      margin-bottom: 20px;
-      color: #333;
-    }
-    
-    .form-group {
-      margin-bottom: 20px;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #555;
-    }
-    
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      font-family: 'Inter', sans-serif;
-      font-size: 1rem;
-      transition: border-color 0.3s;
-    }
-    
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-    
-    .form-group textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-    
-    .btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 12px 32px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    
-    .btn-small {
-      padding: 8px 16px;
-      font-size: 0.9rem;
-    }
-    
-    .btn-danger {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    
-    .btn-danger:hover {
-      box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
-    }
-    
-    .posts {
-      display: grid;
-      gap: 24px;
-    }
-    
-    .post {
-      background: white;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-    
-    .post-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 16px;
-    }
-    
-    .post h3 {
-      font-size: 1.5rem;
-      color: #333;
-      margin-bottom: 8px;
-    }
-    
-    .post-meta {
-      color: #888;
-      font-size: 0.9rem;
-      margin-bottom: 16px;
-    }
-    
-    .post p {
-      color: #555;
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-    
-    .post-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-    }
-    
-    .comments {
-      margin-top: 24px;
-      padding-top: 24px;
-      border-top: 2px solid #f0f0f0;
-    }
-    
-    .comments h4 {
-      font-size: 1.2rem;
-      margin-bottom: 16px;
-      color: #333;
-    }
-    
-    .comment {
-      background: #f9f9f9;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-    
-    .comment-meta {
-      color: #888;
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-    }
-    
-    .comment p {
-      color: #555;
-      margin: 0;
-    }
-    
-    .comment-form {
-      margin-top: 16px;
-    }
-    
-    .error {
-      background: #fee;
-      border: 1px solid #fcc;
-      color: #c33;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    
-    .success {
-      background: #efe;
-      border: 1px solid #cfc;
-      color: #3c3;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ Blog</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .posts-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .posts-section h2 {
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .post-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9fafb;
+            transition: all 0.3s ease;
+        }
+
+        .post-item:hover {
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .post-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .post-meta {
+            font-size: 0.85em;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .post-content {
+            color: #4b5563;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-like {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-like:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .btn-like.liked {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+
+        .comments-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .comments-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+
+        .comment-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+            font-size: 0.9em;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #764ba2;
+        }
+
+        .comment-text {
+            color: #4b5563;
+            margin-top: 4px;
+        }
+
+        .comment-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .comment-form input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-family: inherit;
+        }
+
+        .comment-form button {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .comment-form button:hover {
+            opacity: 0.9;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #374151;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #dc2626;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #16a34a;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 2em;
+            }
+
+            .posts-section,
+            .sidebar {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>✅ Blog</h1>
-    
-    <div class="post-form">
-      <h2>Создать новый пост</h2>
-      <form id="createPostForm">
-        <div class="form-group">
-          <label for="postTitle">Заголовок</label>
-          <input type="text" id="postTitle" required>
+    <div class="container">
+        <header>
+            <h1>✅ Blog</h1>
+            <p>Поделитесь своими мыслями и обсудите интересные идеи</p>
+        </header>
+
+        <div class="main-content">
+            <div class="posts-section">
+                <h2>Посты</h2>
+                <div id="posts-list"></div>
+            </div>
+
+            <div class="sidebar">
+                <h3>Новый пост</h3>
+                <form id="post-form">
+                    <div class="form-group">
+                        <label for="title">Заголовок</label>
+                        <input type="text" id="title" placeholder="Введите заголовок" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="content">Содержание</label>
+                        <textarea id="content" placeholder="Введите содержание поста" required></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">Опубликовать</button>
+                </form>
+            </div>
         </div>
-        <div class="form-group">
-          <label for="postContent">Содержание</label>
-          <textarea id="postContent" required></textarea>
-        </div>
-        <button type="submit" class="btn">Опубликовать</button>
-      </form>
     </div>
-    
-    <div id="posts" class="posts"></div>
-  </div>
-  
-  <script>
-    const API_URL = 'http://localhost:8000';
-    const userId = 1;
-    
-    async function loadPosts() {
-      try {
-        const response = await fetch(`${API_URL}/posts/`);
-        const posts = await response.json();
-        displayPosts(posts);
-      } catch (error) {
-        console.error('Error loading posts:', error);
-      }
-    }
-    
-    function displayPosts(posts) {
-      const postsContainer = document.getElementById('posts');
-      postsContainer.innerHTML = '';
-      
-      posts.forEach(post => {
-        const postElement = document.createElement('div');
-        postElement.className = 'post';
-        postElement.innerHTML = `
-          <div class="post-header">
-            <div>
-              <h3>${post.title}</h3>
-              <div class="post-meta">Пользователь ID: ${post.user_id} | ${new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
-            </div>
-          </div>
-          <p>${post.content}</p>
-          <div class="post-actions">
-            <button class="btn btn-small" onclick="toggleComments(${post.id})">Комментарии</button>
-            <button class="btn btn-small" onclick="likePost(${post.id})">❤️ Лайк</button>
-            <button class="btn btn-small btn-danger" onclick="deletePost(${post.id})">Удалить</button>
-          </div>
-          <div id="comments-${post.id}" class="comments" style="display: none;">
-            <h4>Комментарии</h4>
-            <div id="comments-list-${post.id}"></div>
-            <div class="comment-form">
-              <form onsubmit="addComment(event, ${post.id})">
-                <div class="form-group">
-                  <textarea id="comment-${post.id}" placeholder="Написать комментарий..." required></textarea>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000/api';
+
+        // Load posts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPosts();
+            setupFormHandlers();
+        });
+
+        // Setup form handlers
+        function setupFormHandlers() {
+            const postForm = document.getElementById('post-form');
+            if (postForm) {
+                postForm.addEventListener('submit', handleCreatePost);
+            }
+        }
+
+        // Load and display all posts
+        async function loadPosts() {
+            const postsList = document.getElementById('posts-list');
+            postsList.innerHTML = '<div class="loading">Загрузка постов...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts`);
+                if (!response.ok) throw new Error('Failed to fetch posts');
+                
+                const posts = await response.json();
+                postsList.innerHTML = '';
+                
+                if (posts.length === 0) {
+                    postsList.innerHTML = '<p style="text-align: center; color: #9ca3af; padding: 20px;">Нет постов. Создайте первый!</p>';
+                } else {
+                    posts.forEach(post => {
+                        postsList.appendChild(createPostElement(post));
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                postsList.innerHTML = `<div class="error">Ошибка при загрузке постов: ${error.message}</div>`;
+            }
+        }
+
+        // Create post element
+        function createPostElement(post) {
+            const div = document.createElement('div');
+            div.className = 'post-item';
+            div.id = `post-${post.id}`;
+
+            const commentsHtml = post.comments && post.comments.length > 0
+                ? post.comments.map(comment => `
+                    <div class="comment-item">
+                        <span class="comment-author">${comment.author || 'Аноним'}</span>:
+                        <div class="comment-text">${escapeHtml(comment.text)}</div>
+                    </div>
+                `).join('')
+                : '<p style="color: #9ca3af; font-size: 0.85em;">Нет комментариев</p>';
+
+            div.innerHTML = `
+                <div class="post-header">
+                    <div>
+                        <h3 class="post-title">${escapeHtml(post.title)}</h3>
+                        <div class="post-meta">Создано: ${new Date(post.created_at).toLocaleDateString('ru-RU')}</div>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-small">Отправить</button>
-              </form>
-            </div>
-          </div>
-        `;
-        postsContainer.appendChild(postElement);
-      });
-    }
-    
-    document.getElementById('createPostForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = document.getElementById('postTitle').value;
-      const content = document.getElementById('postContent').value;
-      
-      try {
-        const response = await fetch(`${API_URL}/posts/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title, content, user_id: userId })
-        });
-        
-        if (response.ok) {
-          document.getElementById('postTitle').value = '';
-          document.getElementById('postContent').value = '';
-          loadPosts();
+                <div class="post-content">${escapeHtml(post.content)}</div>
+                <div class="post-actions">
+                    <button class="btn btn-like" onclick="handleLike(${post.id})">❤️ ${post.likes || 0} лайков</button>
+                    <button class="btn btn-delete" onclick="handleDeletePost(${post.id})">🗑️ Удалить</button>
+                </div>
+                <div class="comments-section">
+                    <div class="comments-title">Комментарии (${post.comments ? post.comments.length : 0})</div>
+                    <div class="comments-list">${commentsHtml}</div>
+                    <div class="comment-form">
+                        <input type="text" class="comment-input" placeholder="Добавить комментарий...">
+                        <button type="button" onclick="handleAddComment(${post.id})">Отправить</button>
+                    </div>
+                </div>
+            `;
+
+            return div;
         }
-      } catch (error) {
-        console.error('Error creating post:', error);
-      }
-    });
-    
-    async function deletePost(postId) {
-      if (!confirm('Вы уверены, что хотите удалить этот пост?')) return;
-      
-      try {
-        const response = await fetch(`${API_URL}/posts/${postId}?user_id=${userId}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          loadPosts();
+
+        // Handle create post
+        async function handleCreatePost(e) {
+            e.preventDefault();
+            
+            const titleInput = document.getElementById('title');
+            const contentInput = document.getElementById('content');
+            const submitBtn = e.target.querySelector('.btn-primary');
+
+            if (!titleInput.value.trim() || !contentInput.value.trim()) {
+                alert('Пожалуйста, заполните все поля');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Публикация...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: titleInput.value.trim(),
+                        content: contentInput.value.trim()
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to create post');
+
+                // Clear form
+                titleInput.value = '';
+                contentInput.value = '';
+                submitBtn.textContent = 'Опубликовать';
+                submitBtn.disabled = false;
+
+                // Reload posts
+                await loadPosts();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка при создании поста: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Опубликовать';
+            }
         }
-      } catch (error) {
-        console.error('Error deleting post:', error);
-      }
-    }
-    
-    async function likePost(postId) {
-      try {
-        await fetch(`${API_URL}/posts/${postId}/like`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId })
-        });
-      } catch (error) {
-        console.error('Error liking post:', error);
-      }
-    }
-    
-    async function toggleComments(postId) {
-      const commentsDiv = document.getElementById(`comments-${postId}`);
-      if (commentsDiv.style.display === 'none') {
-        commentsDiv.style.display = 'block';
-        loadComments(postId);
-      } else {
-        commentsDiv.style.display = 'none';
-      }
-    }
-    
-    async function loadComments(postId) {
-      try {
-        const response = await fetch(`${API_URL}/posts/${postId}/comments`);
-        const comments = await response.json();
-        const commentsList = document.getElementById(`comments-list-${postId}`);
-        
-        commentsList.innerHTML = comments.map(comment => `
-          <div class="comment">
-            <div class="comment-meta">Пользователь ID: ${comment.user_id} | ${new Date(comment.created_at).toLocaleDateString('ru-RU')}</div>
-            <p>${comment.content}</p>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.error('Error loading comments:', error);
-      }
-    }
-    
-    async function addComment(event, postId) {
-      event.preventDefault();
-      const content = document.getElementById(`comment-${postId}`).value;
-      
-      try {
-        const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, user_id: userId })
-        });
-        
-        if (response.ok) {
-          document.getElementById(`comment-${postId}`).value = '';
-          loadComments(postId);
+
+        // Handle like
+        async function handleLike(postId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts/${postId}/like`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Failed to like post');
+                
+                // Reload posts to show updated likes
+                await loadPosts();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка при добавлении лайка: ' + error.message);
+            }
         }
-      } catch (error) {
-        console.error('Error adding comment:', error);
-      }
-    }
-    
-    loadPosts();
-  </script>
+
+        // Handle add comment
+        async function handleAddComment(postId) {
+            const postElement = document.getElementById(`post-${postId}`);
+            const commentInput = postElement.querySelector('.comment-input');
+            const commentText = commentInput.value.trim();
+
+            if (!commentText) {
+                alert('Пожалуйста, введите текст комментария');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: commentText,
+                        author: 'Аноним'
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to add comment');
+
+                commentInput.value = '';
+                await loadPosts();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка при добавлении комментария: ' + error.message);
+            }
+        }
+
+        // Handle delete post
+        async function handleDeletePost(postId) {
+            if (!confirm('Вы уверены, что хотите удалить этот пост?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete post');
+                
+                await loadPosts();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка при удалении поста: ' + error.message);
+            }
+        }
+
+        // Utility function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>
