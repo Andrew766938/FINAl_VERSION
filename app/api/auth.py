@@ -10,7 +10,7 @@ from app.exceptions.auth import (
     InvalidPasswordError,
     InvalidPasswordHTTPError,
 )
-from app.schemes.users import SUserAddRequest, SUserAuth, SUserResponse
+from app.schemes.users import SUserAddRequest, SUserAuth
 from app.schemes.relations_users_roles import SUserGetWithRels
 from app.services.auth import AuthService
 from app.services.users import UserService
@@ -35,7 +35,7 @@ async def register_user(
         "access_token": access_token,
         "user": {
             "id": user.id,
-            "username": user.username,
+            "username": user.name,
             "email": user.email,
         }
     }
@@ -60,7 +60,7 @@ async def login_user(
         "access_token": access_token,
         "user": {
             "id": user.id,
-            "username": user.username,
+            "username": user.name,
             "email": user.email,
         }
     }
@@ -70,7 +70,7 @@ async def login_user(
 async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user)) -> dict:
     return {
         "id": current_user.id,
-        "username": current_user.username,
+        "username": current_user.name,
         "email": current_user.email,
     }
 
@@ -84,7 +84,7 @@ async def get_user(db: DBDep, user_id: int) -> dict:
         raise UserNotFoundHTTPError
     return {
         "id": user.id,
-        "username": user.username,
+        "username": user.name,
         "email": user.email,
     }
 
@@ -96,7 +96,7 @@ async def get_all_users(db: DBDep) -> list:
     return [
         {
             "id": user.id,
-            "username": user.username,
+            "username": user.name,
             "email": user.email,
         }
         for user in users
