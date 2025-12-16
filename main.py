@@ -1,13 +1,17 @@
 import os
+import asyncio
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.api.auth import router as auth_router
 from app.api.posts import router as posts_router
 from app.api.friendships import router as friendships_router
+from app.config import settings
+from app.database.database import Base
 
 app = FastAPI(title="Betony", version="1.0.0")
 
@@ -38,6 +42,22 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Create database tables on startup"""
+    print("[APP] Creating database tables...")
+    try:
+        engine = create_async_engine(settings.get_db_url)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("[APP] Database tables created successfully!")
+        await engine.dispose()
+    except Exception as e:
+        print(f"[APP] Error creating tables: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 # Include routers
