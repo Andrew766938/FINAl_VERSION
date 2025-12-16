@@ -23,10 +23,15 @@ async def register_user(
     user_data: SUserAddRequest,
 ) -> dict:
     try:
+        print(f"[REGISTER] Registering user: {user_data.email}")
         user = await AuthService(db).register_user(user_data)
+        print(f"[REGISTER] User created: {user}")
+        
         access_token: str = await AuthService(db).login_user(
             SUserAuth(email=user_data.email, password=user_data.password)
         )
+        print(f"[REGISTER] Token created: {access_token[:20]}...")
+        
         return {
             "access_token": access_token,
             "user": {
@@ -36,9 +41,12 @@ async def register_user(
             }
         }
     except UserAlreadyExistsError:
+        print(f"[REGISTER] User already exists")
         raise UserAlreadyExistsHTTPError
     except Exception as e:
-        print(f"Register error: {e}")
+        print(f"[REGISTER] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise UserAlreadyExistsHTTPError
 
 
@@ -49,25 +57,44 @@ async def login_user(
     user_data: SUserAuth,
 ) -> dict:
     try:
-        access_token: str = await AuthService(db).login_user(user_data)
+        print(f"[LOGIN] Login attempt: {user_data.email}")
+        
+        # Get user
         user = await AuthService(db).get_user_by_email(user_data.email)
+        print(f"[LOGIN] User found: {user}")
+        
+        # Verify password
+        is_valid = AuthService.verify_password(user_data.password, user.hashed_password)
+        print(f"[LOGIN] Password valid: {is_valid}")
+        
+        if not is_valid:
+            print(f"[LOGIN] Password mismatch")
+            raise InvalidPasswordError
+        
+        # Create token
+        access_token: str = await AuthService(db).login_user(user_data)
+        print(f"[LOGIN] Token created successfully")
+        
+        response.set_cookie("access_token", access_token)
+        return {
+            "access_token": access_token,
+            "user": {
+                "id": user.id,
+                "username": user.name,
+                "email": user.email,
+            }
+        }
     except UserNotFoundError:
+        print(f"[LOGIN] User not found")
         raise UserNotFoundHTTPError
     except InvalidPasswordError:
+        print(f"[LOGIN] Invalid password")
         raise InvalidPasswordHTTPError
     except Exception as e:
-        print(f"Login error: {e}")
+        print(f"[LOGIN] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise UserNotFoundHTTPError
-    
-    response.set_cookie("access_token", access_token)
-    return {
-        "access_token": access_token,
-        "user": {
-            "id": user.id,
-            "username": user.name,
-            "email": user.email,
-        }
-    }
 
 
 @router.get("/me", summary="Получение текущего пользователя для профиля")
