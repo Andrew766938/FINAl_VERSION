@@ -14,6 +14,7 @@ from app.schemes.users import (
     SUserAddRequest,
     SUserAuth,
 )
+from app.schemes.roles import SRoleAdd
 from app.schemes.relations_users_roles import SUserGetWithRels
 from app.services.base import BaseService
 import jwt
@@ -50,14 +51,30 @@ class AuthService(BaseService):
         except jwt.exceptions.ExpiredSignatureError as ex:
             raise JWTTokenExpiredError from ex
 
+    async def ensure_default_role(self):
+        """Ensure default role exists"""
+        try:
+            existing_role = await self.db.roles.get_one_or_none(id=1)
+            if not existing_role:
+                role_data = SRoleAdd(name="user", description="Default user role")
+                await self.db.roles.add(role_data)
+                await self.db.commit()
+        except Exception as e:
+            print(f"Error ensuring default role: {e}")
+
     async def register_user(self, user_data: SUserAddRequest):
         try:
+            # Ensure default role exists
+            await self.ensure_default_role()
+            
             hashed_password: str = self.hash_password(user_data.password)
+            role_id = user_data.role_id if user_data.role_id else 1
+            
             new_user_data = SUserAdd(
                 email=user_data.email,
                 hashed_password=hashed_password,
                 name=user_data.name,
-                role_id=user_data.role_id if hasattr(user_data, 'role_id') and user_data.role_id else 1,
+                role_id=role_id,
             )
             user = await self.db.users.add(new_user_data)
             await self.db.commit()
