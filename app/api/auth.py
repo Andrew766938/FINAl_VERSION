@@ -13,7 +13,6 @@ from app.exceptions.auth import (
 from app.schemes.users import SUserAddRequest, SUserAuth
 from app.schemes.relations_users_roles import SUserGetWithRels
 from app.services.auth import AuthService
-from app.services.users import UserService
 from app.models.users import UserModel
 
 router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
@@ -49,8 +48,7 @@ async def login_user(
 ) -> dict:
     try:
         access_token: str = await AuthService(db).login_user(user_data)
-        service = UserService(db)
-        user = await service.get_user_by_email(user_data.email)
+        user = await AuthService(db).get_user_by_email(user_data.email)
     except UserNotFoundError:
         raise UserNotFoundHTTPError
     except InvalidPasswordError:
@@ -78,8 +76,7 @@ async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user))
 @router.get("/users/{user_id}", summary="Получение пользователя по ID")
 async def get_user(db: DBDep, user_id: int) -> dict:
     try:
-        service = UserService(db)
-        user = await service.get_user(user_id)
+        user = await AuthService(db).get_user(user_id)
     except UserNotFoundError:
         raise UserNotFoundHTTPError
     return {
@@ -91,8 +88,7 @@ async def get_user(db: DBDep, user_id: int) -> dict:
 
 @router.get("/users", summary="Получение списка всех пользователей")
 async def get_all_users(db: DBDep) -> list:
-    service = UserService(db)
-    users = await service.get_all_users()
+    users = await AuthService(db).get_all_users()
     return [
         {
             "id": user.id,
