@@ -1,103 +1,76 @@
 from fastapi import APIRouter, Depends
 from starlette.responses import Response
+import traceback
 
 from app.api.dependencies import DBDep, get_current_user
-from app.exceptions.auth import (
-    UserAlreadyExistsError,
-    UserAlreadyExistsHTTPError,
-    UserNotFoundError,
-    UserNotFoundHTTPError,
-    InvalidPasswordError,
-    InvalidPasswordHTTPError,
-)
-from app.schemes.users import SUserAddRequest, SUserAuth
-from app.services.auth import AuthService
 from app.models.users import UserModel
+from app.services.auth import AuthService
 
-router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register", summary="Регистрация нового пользователя")
-async def register_user(
-    db: DBDep,
-    user_data: SUserAddRequest,
-) -> dict:
+@router.post("/register")
+async def register_user(db: DBDep, email: str, password: str, name: str) -> dict:
+    """
+    Simple registration endpoint
+    """
     try:
-        print(f"[REGISTER] Registering user: {user_data.email}")
-        user = await AuthService(db).register_user(user_data)
-        print(f"[REGISTER] User created: {user}")
+        print(f"\n[API] Register endpoint called")
+        print(f"[API] Email: {email}, Name: {name}")
         
-        access_token: str = await AuthService(db).login_user(
-            SUserAuth(email=user_data.email, password=user_data.password)
-        )
-        print(f"[REGISTER] Token created: {access_token[:20]}...")
+        service = AuthService(db)
+        user, token = await service.register_and_login(email, password, name)
         
+        print(f"[API] Registration successful, returning token")
         return {
-            "access_token": access_token,
+            "access_token": token,
             "user": {
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
             }
         }
-    except UserAlreadyExistsError:
-        print(f"[REGISTER] User already exists")
-        raise UserAlreadyExistsHTTPError
+    except ValueError as e:
+        print(f"[API] Validation error: {e}")
+        return {"error": str(e)}, 400
     except Exception as e:
-        print(f"[REGISTER] Error: {str(e)}")
-        import traceback
+        print(f"[API] Registration error: {e}")
         traceback.print_exc()
-        raise UserAlreadyExistsHTTPError
+        return {"error": "Registration failed"}, 500
 
 
-@router.post("/login", summary="Аутентификация пользователя")
-async def login_user(
-    db: DBDep,
-    response: Response,
-    user_data: SUserAuth,
-) -> dict:
+@router.post("/login")
+async def login_user(db: DBDep, response: Response, email: str, password: str) -> dict:
+    """
+    Simple login endpoint
+    """
     try:
-        print(f"[LOGIN] Login attempt: {user_data.email}")
+        print(f"\n[API] Login endpoint called")
+        print(f"[API] Email: {email}")
         
-        # Get user
-        user = await AuthService(db).get_user_by_email(user_data.email)
-        print(f"[LOGIN] User found: {user}")
+        service = AuthService(db)
+        user, token = await service.login(email, password)
         
-        # Verify password
-        is_valid = AuthService.verify_password(user_data.password, user.hashed_password)
-        print(f"[LOGIN] Password valid: {is_valid}")
-        
-        if not is_valid:
-            print(f"[LOGIN] Password mismatch")
-            raise InvalidPasswordError
-        
-        # Create token
-        access_token: str = await AuthService(db).login_user(user_data)
-        print(f"[LOGIN] Token created successfully")
-        
-        response.set_cookie("access_token", access_token)
+        print(f"[API] Login successful")
+        response.set_cookie("access_token", token)
         return {
-            "access_token": access_token,
+            "access_token": token,
             "user": {
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
             }
         }
-    except UserNotFoundError:
-        print(f"[LOGIN] User not found")
-        raise UserNotFoundHTTPError
-    except InvalidPasswordError:
-        print(f"[LOGIN] Invalid password")
-        raise InvalidPasswordHTTPError
+    except ValueError as e:
+        print(f"[API] Validation error: {e}")
+        return {"error": str(e)}, 401
     except Exception as e:
-        print(f"[LOGIN] Error: {str(e)}")
-        import traceback
+        print(f"[API] Login error: {e}")
         traceback.print_exc()
-        raise UserNotFoundHTTPError
+        return {"error": "Login failed"}, 500
 
 
-@router.get("/me", summary="Получение текущего пользователя для профиля")
+@router.get("/me")
 async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user)) -> dict:
     return {
         "id": current_user.id,
@@ -106,37 +79,39 @@ async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user))
     }
 
 
-@router.get("/users/{user_id}", summary="Получение пользователя по ID")
+@router.get("/users/{user_id}")
 async def get_user(db: DBDep, user_id: int) -> dict:
     try:
-        user = await AuthService(db).get_user(user_id)
-    except UserNotFoundError:
-        raise UserNotFoundHTTPError
-    return {
-        "id": user.id,
-        "username": user.name,
-        "email": user.email,
-    }
+        service = AuthService(db)
+        user = await service.get_user(user_id)
+        return {
+            "id": user.id,
+            "username": user.name,
+            "email": user.email,
+        }
+    except:
+        return {"error": "User not found"}, 404
 
 
-@router.get("/users", summary="Получение списка всех пользователей")
+@router.get("/users")
 async def get_all_users(db: DBDep) -> list:
     try:
-        users = await AuthService(db).get_all_users()
+        service = AuthService(db)
+        users = await service.get_all_users()
         return [
             {
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
             }
-            for user in users
+            for user in (users or [])
         ]
     except Exception as e:
-        print(f"Get users error: {e}")
+        print(f"[API] Get users error: {e}")
         return []
 
 
-@router.post("/logout", summary="Выход пользователя из системы")
-async def logout(response: Response) -> dict[str, str]:
+@router.post("/logout")
+async def logout(response: Response) -> dict:
     response.delete_cookie("access_token")
     return {"status": "OK"}
