@@ -10,14 +10,14 @@ class SUserAddRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
-    role_id: int
+    role_id: int | None = 1  # Optional, defaults to 1
 
 
 class SUserAdd(BaseModel):
     name: str
     email: EmailStr
     hashed_password: str
-    role_id: int
+    role_id: int | None = 1
 
 
 class SUserAuth(BaseModel):
