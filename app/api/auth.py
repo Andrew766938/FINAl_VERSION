@@ -1,7 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from starlette.responses import Response
 
-from app.api.dependencies import DBDep, UserIdDep
+from app.api.dependencies import DBDep, UserIdDep, get_current_user
 from app.exceptions.auth import (
     UserAlreadyExistsError,
     UserAlreadyExistsHTTPError,
@@ -10,9 +10,11 @@ from app.exceptions.auth import (
     InvalidPasswordError,
     InvalidPasswordHTTPError,
 )
-from app.schemes.users import SUserAddRequest, SUserAuth
+from app.schemes.users import SUserAddRequest, SUserAuth, SUserResponse
 from app.schemes.relations_users_roles import SUserGetWithRels
 from app.services.auth import AuthService
+from app.services.users import UserService
+from app.models.users import UserModel
 
 router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
 
@@ -21,12 +23,22 @@ router = APIRouter(prefix="/auth", tags=["Авторизация и аутент
 async def register_user(
     db: DBDep,
     user_data: SUserAddRequest,
-) -> dict[str, str]:
+) -> dict:
     try:
-        await AuthService(db).register_user(user_data)
+        user = await AuthService(db).register_user(user_data)
+        access_token: str = await AuthService(db).login_user(
+            SUserAuth(email=user_data.email, password=user_data.password)
+        )
     except UserAlreadyExistsError:
         raise UserAlreadyExistsHTTPError
-    return {"status": "OK"}
+    return {
+        "access_token": access_token,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        }
+    }
 
 
 @router.post("/login", summary="Аутентификация пользователя")
@@ -34,24 +46,61 @@ async def login_user(
     db: DBDep,
     response: Response,
     user_data: SUserAuth,
-) -> dict[str, str]:
+) -> dict:
     try:
         access_token: str = await AuthService(db).login_user(user_data)
+        service = UserService(db)
+        user = await service.get_user_by_email(user_data.email)
     except UserNotFoundError:
         raise UserNotFoundHTTPError
     except InvalidPasswordError:
         raise InvalidPasswordHTTPError
     response.set_cookie("access_token", access_token)
-    return {"access_token": access_token}
+    return {
+        "access_token": access_token,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        }
+    }
 
 
 @router.get("/me", summary="Получение текущего пользователя для профиля")
-async def get_me(db: DBDep, user_id: UserIdDep) -> SUserGetWithRels | None:
+async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user)) -> dict:
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+    }
+
+
+@router.get("/users/{user_id}", summary="Получение пользователя по ID")
+async def get_user(db: DBDep, user_id: int) -> dict:
     try:
-        user: None | SUserGetWithRels = await AuthService(db).get_me(user_id)
+        service = UserService(db)
+        user = await service.get_user(user_id)
     except UserNotFoundError:
         raise UserNotFoundHTTPError
-    return user
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    }
+
+
+@router.get("/users", summary="Получение списка всех пользователей")
+async def get_all_users(db: DBDep) -> list:
+    service = UserService(db)
+    users = await service.get_all_users()
+    return [
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        }
+        for user in users
+    ]
 
 
 @router.post("/logout", summary="Выход пользователя из системы")
