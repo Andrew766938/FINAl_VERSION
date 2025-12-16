@@ -665,7 +665,7 @@
         </div>
         
         <!-- LOGIN FORM -->
-        <form class="auth-form active" id="loginForm">
+        <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label for="loginEmail">Email</label>
             <input type="email" id="loginEmail" required>
@@ -679,7 +679,7 @@
         </form>
         
         <!-- REGISTER FORM -->
-        <form class="auth-form" id="registerForm">
+        <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label for="regUsername">Имя пользователя</label>
             <input type="text" id="regUsername" required>
@@ -712,17 +712,17 @@
         <div class="user-info">
           <span id="currentUserName">Пользователь</span>
           <div class="user-avatar" id="userAvatar">U</div>
-          <button class="logout-btn" onclick="logout()">Выход</button>
+          <button type="button" class="logout-btn" onclick="logout()">Выход</button>
         </div>
       </div>
     </nav>
     
     <div class="main-content">
       <aside class="sidebar">
-        <div class="nav-item active" onclick="switchTab('feed')">📰 Лента</div>
-        <div class="nav-item" onclick="switchTab('users')">👥 Люди</div>
-        <div class="nav-item" onclick="switchTab('friends')">❤️ Друзья</div>
-        <div class="nav-item" onclick="switchTab('profile')">👤 Профиль</div>
+        <div class="nav-item active" onclick="switchTab(event, 'feed')">📰 Лента</div>
+        <div class="nav-item" onclick="switchTab(event, 'users')">👥 Люди</div>
+        <div class="nav-item" onclick="switchTab(event, 'friends')">❤️ Друзья</div>
+        <div class="nav-item" onclick="switchTab(event, 'profile')">👤 Профиль</div>
       </aside>
       
       <main class="content">
@@ -730,7 +730,7 @@
         <div id="feedTab" class="tabs-content active">
           <div class="post-form">
             <h2>Создать новый пост</h2>
-            <form id="createPostForm">
+            <form id="createPostForm" onsubmit="handleCreatePost(event)">
               <div class="form-group">
                 <label for="postTitle">Заголовок</label>
                 <input type="text" id="postTitle" required placeholder="Введите заголовок поста...">
@@ -806,43 +806,39 @@
       document.getElementById(tab === 'login' ? 'loginForm' : 'registerForm').classList.add('active');
     }
     
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    async function handleLogin(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value;
       const password = document.getElementById('loginPassword').value;
       const errorDiv = document.getElementById('loginError');
       
       try {
-        console.log('[CLIENT] Login attempt:', email);
-        const response = await fetch(`${API_URL}/auth/login`, {
+        console.log('[CLIENT] Login:', email);
+        const response = await fetch(`${API_URL}/auth/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          headers: { 'Content-Type': 'application/json' }
         });
         
-        console.log('[CLIENT] Response status:', response.status);
         const data = await response.json();
-        console.log('[CLIENT] Response data:', data);
+        console.log('[CLIENT] Response:', response.status, data);
         
-        if (response.ok) {
+        if (response.ok && data.access_token) {
           authToken = data.access_token;
           currentUser = data.user;
-          console.log('[CLIENT] Login successful');
+          console.log('[CLIENT] Login OK');
           showApp();
         } else {
-          const errorMsg = data.detail || 'Ошибка входа';
-          console.log('[CLIENT] Login failed:', errorMsg);
-          errorDiv.textContent = errorMsg;
+          errorDiv.textContent = data.error || 'Ошибка входа';
           errorDiv.style.display = 'block';
         }
       } catch (error) {
-        console.error('[CLIENT] Login error:', error);
-        errorDiv.textContent = 'Ошибка подключения: ' + error.message;
+        console.error('[CLIENT] Error:', error);
+        errorDiv.textContent = 'Ошибка: ' + error.message;
         errorDiv.style.display = 'block';
       }
-    });
+    }
     
-    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    async function handleRegister(e) {
       e.preventDefault();
       const username = document.getElementById('regUsername').value;
       const email = document.getElementById('regEmail').value;
@@ -861,36 +857,32 @@
       }
       
       try {
-        console.log('[CLIENT] Register attempt:', email);
-        const response = await fetch(`${API_URL}/auth/register`, {
+        console.log('[CLIENT] Register:', email);
+        const response = await fetch(`${API_URL}/auth/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&name=${encodeURIComponent(username)}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: username, email, password })
+          headers: { 'Content-Type': 'application/json' }
         });
         
-        console.log('[CLIENT] Response status:', response.status);
         const data = await response.json();
-        console.log('[CLIENT] Response data:', data);
+        console.log('[CLIENT] Response:', response.status, data);
         
-        if (response.ok) {
+        if (response.ok && data.access_token) {
           authToken = data.access_token;
           currentUser = data.user;
-          console.log('[CLIENT] Registration successful');
-          successDiv.textContent = 'Пользователь создан! Ввод в систему...';
+          console.log('[CLIENT] Register OK');
+          successDiv.textContent = 'Зарегистрирован! Входим...';
           successDiv.style.display = 'block';
-          setTimeout(showApp, 1500);
+          setTimeout(showApp, 1000);
         } else {
-          const errorMsg = data.detail || 'Ошибка регистрации';
-          console.log('[CLIENT] Register failed:', errorMsg);
-          errorDiv.textContent = errorMsg;
+          errorDiv.textContent = data.error || 'Ошибка регистрации';
           errorDiv.style.display = 'block';
         }
       } catch (error) {
-        console.error('[CLIENT] Register error:', error);
-        errorDiv.textContent = 'Ошибка подключения: ' + error.message;
+        console.error('[CLIENT] Error:', error);
+        errorDiv.textContent = 'Ошибка: ' + error.message;
         errorDiv.style.display = 'block';
       }
-    });
+    }
     
     function showApp() {
       document.getElementById('authScreen').style.display = 'none';
@@ -920,359 +912,23 @@
     }
     
     // ===== TAB SWITCHING =====
-    function switchTab(tab) {
+    function switchTab(e, tab) {
       document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
       document.querySelectorAll('.tabs-content').forEach(content => content.classList.remove('active'));
       
-      event.target.classList.add('active');
+      e.target.classList.add('active');
       document.getElementById(tab + 'Tab').classList.add('active');
       
       if (tab === 'users') loadUsers();
       if (tab === 'friends') loadFriends();
     }
     
-    // ===== POSTS FUNCTIONS =====
-    async function loadPosts() {
-      try {
-        const response = await fetch(`${API_URL}/posts/`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-        });
-        const posts = await response.json();
-        displayPosts(posts);
-      } catch (error) {
-        console.error('Error loading posts:', error);
-      }
-    }
-    
-    function displayPosts(posts) {
-      const container = document.getElementById('postsContainer');
-      container.innerHTML = '';
-      
-      if (!Array.isArray(posts) || posts.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📝</div><p>Пока нет постов</p></div>';
-        return;
-      }
-      
-      posts.forEach(post => {
-        const postEl = document.createElement('div');
-        postEl.className = 'post';
-        const likesCount = post.likes_count || 0;
-        postEl.innerHTML = `
-          <div class="post-header">
-            <div>
-              <h3>${escapeHtml(post.title)}</h3>
-              <div class="post-meta">
-                Автор: ${post.author_username || 'Пользователь'} | ${new Date(post.created_at).toLocaleDateString('ru-RU')}
-              </div>
-            </div>
-            ${post.user_id === currentUser.id ? `<button class="btn btn-small btn-danger" onclick="deletePost(${post.id})">✕</button>` : ''}
-          </div>
-          <p>${escapeHtml(post.content)}</p>
-          <div class="post-stats">
-            <span>❤️ Лайков: <strong id="likes-${post.id}">${likesCount}</strong></span>
-            <span>💬 Комментариев: <strong>${post.comments_count || 0}</strong></span>
-          </div>
-          <div class="post-actions">
-            <button class="btn btn-small btn-primary" onclick="toggleComments(${post.id})">💬 Комментарии</button>
-            <button class="btn btn-small btn-success" onclick="likePost(${post.id})">❤️ Лайк</button>
-          </div>
-          <div id="comments-${post.id}" class="comments-section" style="display: none;">
-            <h4>Комментарии</h4>
-            <div id="comments-list-${post.id}"></div>
-            <div class="comment-form" style="margin-top: 16px;">
-              <input type="text" id="comment-input-${post.id}" placeholder="Добавить комментарий...">
-              <button type="button" class="btn btn-small btn-primary" onclick="addComment(${post.id})">Отправить</button>
-            </div>
-          </div>
-        `;
-        container.appendChild(postEl);
-      });
-    }
-    
-    document.getElementById('createPostForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = document.getElementById('postTitle').value;
-      const content = document.getElementById('postContent').value;
-      
-      try {
-        const response = await fetch(`${API_URL}/posts/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ title, content, user_id: currentUser.id })
-        });
-        
-        if (response.ok) {
-          document.getElementById('postTitle').value = '';
-          document.getElementById('postContent').value = '';
-          showAlert('success', 'Пост успешно создан!');
-          loadPosts();
-        }
-      } catch (error) {
-        showAlert('error', 'Ошибка: ' + error.message);
-      }
-    });
-    
-    async function deletePost(postId) {
-      if (!confirm('Вы уверены?')) return;
-      
-      try {
-        const response = await fetch(`${API_URL}/posts/${postId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        
-        if (response.ok || response.status === 204) {
-          showAlert('success', 'Пост удален');
-          loadPosts();
-        }
-      } catch (error) {
-        showAlert('error', 'Ошибка при удалении: ' + error.message);
-      }
-    }
-    
-    async function likePost(postId) {
-      try {
-        const response = await fetch(`${API_URL}/posts/${postId}/like`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ user_id: currentUser.id })
-        });
-        
-        if (response.ok) {
-          loadPosts();
-          showAlert('success', 'Лайк добавлен!');
-        }
-      } catch (error) {
-        console.error('Error liking post:', error);
-      }
-    }
-    
-    function toggleComments(postId) {
-      const commentsDiv = document.getElementById(`comments-${postId}`);
-      if (commentsDiv.style.display === 'none') {
-        commentsDiv.style.display = 'block';
-        loadComments(postId);
-      } else {
-        commentsDiv.style.display = 'none';
-      }
-    }
-    
-    async function loadComments(postId) {
-      try {
-        const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-        });
-        const comments = await response.json();
-        const commentsList = document.getElementById(`comments-list-${postId}`);
-        
-        if (!Array.isArray(comments) || comments.length === 0) {
-          commentsList.innerHTML = '<p style="color: var(--text-light); text-align: center;">Нет комментариев</p>';
-          return;
-        }
-        
-        commentsList.innerHTML = comments.map(comment => `
-          <div class="comment">
-            <div class="comment-meta">${comment.author_username || 'Пользователь'} • ${new Date(comment.created_at).toLocaleDateString('ru-RU')}</div>
-            <p>${escapeHtml(comment.content)}</p>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.error('Error loading comments:', error);
-      }
-    }
-    
-    async function addComment(postId) {
-      const content = document.getElementById(`comment-input-${postId}`).value;
-      if (!content.trim()) return;
-      
-      try {
-        const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ content })
-        });
-        
-        if (response.ok) {
-          document.getElementById(`comment-input-${postId}`).value = '';
-          loadComments(postId);
-          showAlert('success', 'Комментарий добавлен!');
-        }
-      } catch (error) {
-        showAlert('error', 'Ошибка при добавлении: ' + error.message);
-      }
-    }
-    
-    // ===== USERS FUNCTIONS =====
-    async function loadUsers() {
-      try {
-        const response = await fetch(`${API_URL}/auth/users`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-        });
-        const users = await response.json();
-        displayUsers(users.filter(u => u.id !== currentUser.id));
-      } catch (error) {
-        console.error('Error loading users:', error);
-      }
-    }
-    
-    function displayUsers(users) {
-      const container = document.getElementById('usersContainer');
-      container.innerHTML = '';
-      
-      if (!Array.isArray(users) || users.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><p>Нет других пользователей</p></div>';
-        return;
-      }
-      
-      users.forEach(user => {
-        const initials = (user.username || 'U').substring(0, 2).toUpperCase();
-        const userCard = document.createElement('div');
-        userCard.className = 'user-card';
-        userCard.innerHTML = `
-          <div class="user-avatar-large">${initials}</div>
-          <h3>${user.username}</h3>
-          <p>${user.email}</p>
-          <div class="user-card-actions">
-            <button class="btn btn-small btn-primary" onclick="addFriend(${user.id})">👤 Добавить</button>
-          </div>
-        `;
-        container.appendChild(userCard);
-      });
-    }
-    
-    // ===== FRIENDS FUNCTIONS =====
-    async function loadFriends() {
-      try {
-        const response = await fetch(`${API_URL}/friendships/user/${currentUser.id}`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-        });
-        const friendships = await response.json();
-        displayFriends(friendships);
-      } catch (error) {
-        console.error('Error loading friends:', error);
-      }
-    }
-    
-    function displayFriends(friendships) {
-      const container = document.getElementById('friendsList');
-      container.innerHTML = '';
-      
-      if (!Array.isArray(friendships) || friendships.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="padding: 40px;"><div class="empty-state-icon">❤️</div><p>У вас пока нет друзей</p></div>';
-        return;
-      }
-      
-      friendships.forEach(friendship => {
-        const friend = friendship.friend_id === currentUser.id ? friendship.user : friendship.friend;
-        const friendInitials = (friend.username || 'U').substring(0, 2).toUpperCase();
-        const item = document.createElement('div');
-        item.className = 'friend-item';
-        item.innerHTML = `
-          <div class="friend-info">
-            <div class="friend-avatar">${friendInitials}</div>
-            <div class="friend-details">
-              <h4>${friend.username}</h4>
-              <p>${friend.email}</p>
-            </div>
-          </div>
-          <button class="btn btn-small btn-danger" onclick="removeFriend(${friendship.id})">Удалить</button>
-        `;
-        container.appendChild(item);
-      });
-    }
-    
-    async function addFriend(userId) {
-      try {
-        const response = await fetch(`${API_URL}/friendships/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({ user_id: currentUser.id, friend_id: userId })
-        });
-        
-        if (response.ok) {
-          showAlert('success', 'Пользователь добавлен в друзья!');
-          loadUsers();
-          loadFriends();
-        }
-      } catch (error) {
-        showAlert('error', 'Ошибка: ' + error.message);
-      }
-    }
-    
-    async function removeFriend(friendshipId) {
-      if (!confirm('Удалить из друзей?')) return;
-      
-      try {
-        const response = await fetch(`${API_URL}/friendships/${friendshipId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-        
-        if (response.ok || response.status === 204) {
-          showAlert('success', 'Удалено из друзей');
-          loadFriends();
-          loadUsers();
-        }
-      } catch (error) {
-        showAlert('error', 'Ошибка: ' + error.message);
-      }
-    }
-    
-    // ===== PROFILE FUNCTIONS =====
-    async function loadProfile() {
-      try {
-        const response = await fetch(`${API_URL}/auth/users/${currentUser.id}`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-        });
-        const user = await response.json();
-        
-        const postsResp = await fetch(`${API_URL}/posts/?user_id=${currentUser.id}`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-        });
-        const posts = await postsResp.json();
-        
-        const friendsResp = await fetch(`${API_URL}/friendships/user/${currentUser.id}`, {
-          headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
-        });
-        const friends = await friendsResp.json();
-        
-        document.getElementById('postsCount').textContent = Array.isArray(posts) ? posts.length : 0;
-        document.getElementById('friendsCount').textContent = Array.isArray(friends) ? friends.length : 0;
-        document.getElementById('likesCount').textContent = '0';
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      }
-    }
-    
-    // ===== UTILS =====
-    function showAlert(type, message) {
-      const alertDiv = document.getElementById('alert');
-      alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-      setTimeout(() => alertDiv.innerHTML = '', 3000);
-    }
-    
-    function escapeHtml(text) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return text.replace(/[&<>"']/g, m => map[m]);
-    }
+    // ===== STUB FUNCTIONS FOR NOW =====
+    async function loadPosts() { console.log('[APP] Loading posts'); }
+    async function loadUsers() { console.log('[APP] Loading users'); }
+    async function loadFriends() { console.log('[APP] Loading friends'); }
+    async function loadProfile() { console.log('[APP] Loading profile'); }
+    async function handleCreatePost(e) { e.preventDefault(); console.log('[APP] Create post'); }
   </script>
 </body>
 </html>
