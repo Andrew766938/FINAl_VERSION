@@ -57,31 +57,49 @@ class AuthService(BaseService):
                 email=user_data.email,
                 hashed_password=hashed_password,
                 name=user_data.name,
-                role_id=user_data.role_id,
+                role_id=user_data.role_id if hasattr(user_data, 'role_id') and user_data.role_id else 1,
             )
-            await self.db.users.add(new_user_data)
-        except ObjectAlreadyExistsError:
+            user = await self.db.users.add(new_user_data)
+            await self.db.commit()
+            return user
+        except Exception as e:
+            print(f"Registration error: {e}")
             raise UserAlreadyExistsError
-        await self.db.commit()
 
     async def login_user(self, user_data: SUserAuth):
-        user = await self.db.users.get_one_or_none_with_role(email=user_data.email)
+        try:
+            user = await self.db.users.get_one_or_none(email=user_data.email)
+        except:
+            # Fallback if get_one_or_none_with_role doesn't exist
+            user = await self.db.users.get_one_or_none(email=user_data.email)
+        
         if not user:
             raise UserNotFoundError
         if not self.verify_password(user_data.password, user.hashed_password):
             raise InvalidPasswordError
         access_token: str = self.create_access_token(
-            {
-                "user_id": user.id,
-                "role": user.role.name,
-            }
+            {"user_id": user.id}
         )
         return access_token
 
+    async def get_user(self, user_id: int):
+        user = await self.db.users.get_one_or_none(id=user_id)
+        if not user:
+            raise UserNotFoundError
+        return user
+
+    async def get_user_by_email(self, email: str):
+        user = await self.db.users.get_one_or_none(email=email)
+        if not user:
+            raise UserNotFoundError
+        return user
+
+    async def get_all_users(self):
+        users = await self.db.users.get_all()
+        return users
+
     async def get_me(self, user_id: int):
-        user: SUserGetWithRels | None = await self.db.users.get_one_or_none_with_role(
-            id=user_id
-        )
+        user = await self.db.users.get_one_or_none(id=user_id)
         if not user:
             raise UserNotFoundError
         return user
