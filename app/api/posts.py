@@ -7,7 +7,6 @@ from app.services.comments import CommentService
 from app.services.likes import LikeService
 from app.schemes.posts import PostCreate, PostUpdate, PostResponse
 from app.schemes.comments import CommentCreate, CommentResponse
-from app.schemes.likes import LikeCreate, LikeResponse
 from app.models.users import UserModel
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -116,7 +115,7 @@ async def get_post_comments(
             "user_id": c.user_id,
             "content": c.content,
             "created_at": c.created_at,
-            "author_username": c.user.username if c.user else "Unknown"
+            "author_username": c.user.name if c.user else "Unknown"
         }
         for c in comments
     ]
@@ -152,7 +151,7 @@ async def create_comment(
 )
 async def like_post(
     post_id: int,
-    like_data: LikeCreate,
+    like_data: dict,
     db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
