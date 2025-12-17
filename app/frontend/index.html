@@ -150,6 +150,46 @@
       box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
     }
     
+    .test-data-section {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+    
+    .test-data-title {
+      color: var(--success);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .test-user {
+      color: var(--text-light);
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .test-user:hover {
+      background: rgba(16, 185, 129, 0.2);
+      transform: translateX(4px);
+    }
+    
+    .test-user-email {
+      font-weight: 500;
+      color: var(--success);
+    }
+    
+    .test-user-password {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    
     .btn {
       padding: 12px 24px;
       border: none;
@@ -499,6 +539,31 @@
         
         <!-- LOGIN FORM -->
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+          <!-- ТЕСТОВЫЕ ДАННЫЕ -->
+          <div class="test-data-section">
+            <div class="test-data-title">✨ Тестовые учётные данные:</div>
+            <div class="test-user" onclick="fillTestUser('alice@betony.local', 'password123')">
+              <div class="test-user-email">👤 alice@betony.local</div>
+              <div class="test-user-password">🔑 password123</div>
+            </div>
+            <div class="test-user" onclick="fillTestUser('bob@betony.local', 'password123')">
+              <div class="test-user-email">👤 bob@betony.local</div>
+              <div class="test-user-password">🔑 password123</div>
+            </div>
+            <div class="test-user" onclick="fillTestUser('charlie@betony.local', 'password123')">
+              <div class="test-user-email">👤 charlie@betony.local</div>
+              <div class="test-user-password">🔑 password123</div>
+            </div>
+            <div class="test-user" onclick="fillTestUser('diana@betony.local', 'password123')">
+              <div class="test-user-email">👤 diana@betony.local</div>
+              <div class="test-user-password">🔑 password123</div>
+            </div>
+            <div class="test-user" onclick="fillTestUser('evan@betony.local', 'password123')">
+              <div class="test-user-email">👤 evan@betony.local</div>
+              <div class="test-user-password">🔑 password123</div>
+            </div>
+          </div>
+          
           <div class="form-group">
             <label for="loginEmail">Email</label>
             <input type="email" id="loginEmail" required placeholder="user@example.com">
@@ -717,6 +782,13 @@
     const API_URL = 'http://localhost:8000';
     let currentUser = null;
     let authToken = null;
+    
+    // 🎯 ФУНКЦИЯ ДЛЯ ЗАПОЛНЕНИЯ ТЕСТОВЫХ ДАННЫХ
+    function fillTestUser(email, password) {
+      document.getElementById('loginEmail').value = email;
+      document.getElementById('loginPassword').value = password;
+      console.log('[CLIENT] 👤 Тестовые данные заполнены:', email);
+    }
     
     // ✅ ФУНКЦИЯ ДЛЯ ОТПРАВКИ ЗАПРОСОВ С ТОКЕНОМ
     async function apiCall(endpoint, options = {}) {
