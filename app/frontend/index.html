@@ -218,6 +218,16 @@
       color: white;
     }
     
+    .btn-liked {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      color: white;
+      border: 1px solid #dc2626;
+    }
+    
+    .btn-liked:hover:not(:disabled) {
+      background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+    }
+    
     .form-error {
       color: var(--danger);
       font-size: 0.9rem;
@@ -687,6 +697,7 @@
     <div class="main-content">
       <aside class="sidebar">
         <div class="nav-item active" onclick="switchTab(event, 'feed')">📰 Лента</div>
+        <div class="nav-item" onclick="switchTab(event, 'favorites')">⭐ Избранное</div>
         <div class="nav-item" onclick="switchTab(event, 'users')">👥 Люди</div>
         <div class="nav-item" onclick="switchTab(event, 'friends')">❤️ Друзья</div>
         <div class="nav-item" onclick="switchTab(event, 'profile')">👤 Профиль</div>
@@ -711,6 +722,12 @@
           </div>
           
           <div id="postsContainer" class="posts-grid"></div>
+        </div>
+        
+        <!-- FAVORITES TAB -->
+        <div id="favoritesTab" class="tabs-content">
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">⭐ Избранное</h2>
+          <div id="favoritesContainer" class="posts-grid"></div>
         </div>
         
         <!-- USERS TAB -->
@@ -740,6 +757,7 @@
     let authToken = null;
     let allUsersCache = [];
     let friendshipsCache = [];
+    let userLikesCache = new Set(); // Храним ID постов, которые пользователь лайкнул
 
     async function apiCall(endpoint, options = {}) {
       const headers = {
@@ -884,6 +902,7 @@
       document.getElementById('userAvatar').textContent = initials;
 
       await Promise.all([
+        loadUserLikes(),
         loadPosts(),
         loadUsers(),
         loadFriendships(),
@@ -894,6 +913,7 @@
     function logout() {
       currentUser = null;
       authToken = null;
+      userLikesCache.clear();
       document.getElementById('appScreen').classList.remove('active');
       document.getElementById('authScreen').style.display = 'flex';
       document.getElementById('loginForm').reset();
@@ -901,6 +921,7 @@
       document.getElementById('loginStatus').style.display = 'none';
       document.getElementById('regStatus').style.display = 'none';
       document.getElementById('postsContainer').innerHTML = '';
+      document.getElementById('favoritesContainer').innerHTML = '';
       document.getElementById('usersContainer').innerHTML = '';
       document.getElementById('friendsContainer').innerHTML = '';
       document.getElementById('profileContainer').innerHTML = '';
@@ -914,6 +935,11 @@
       
       e.target.classList.add('active');
       document.getElementById(tab + 'Tab').classList.add('active');
+      
+      // Load favorites when switching to favorites tab
+      if (tab === 'favorites') {
+        loadFavorites();
+      }
     }
 
     function createUserAvatar(name) {
@@ -922,6 +948,20 @@
       span.className = 'post-avatar';
       span.textContent = initials;
       return span;
+    }
+
+    async function loadUserLikes() {
+      try {
+        console.log('[LIKES] Loading user likes...');
+        const res = await apiCall(`/likes/user/${currentUser.id}`);
+        if (res.ok) {
+          const likes = await res.json();
+          userLikesCache = new Set(likes.map(like => like.post_id));
+          console.log('[LIKES] User has liked posts:', Array.from(userLikesCache));
+        }
+      } catch (e) {
+        console.error('[LIKES] Error loading user likes:', e);
+      }
     }
 
     async function loadPosts() {
@@ -953,6 +993,9 @@
       el.className = 'post';
       const authorName = post.author_name || post.user?.name || 'Неизвестный автор';
       const authorEmail = post.author_email || post.user?.email || 'user';
+      
+      // Check if user has liked this post
+      const isLiked = userLikesCache.has(post.id);
       
       // Get likes and comments count
       let likesCount = 0;
@@ -997,7 +1040,9 @@
           <span id="comments-count-${post.id}">💬 Комментариев: ${commentsCount}</span>
         </div>
         <div class="post-actions">
-          <button class="btn btn-small btn-secondary" onclick="likePost(${post.id})">❤️ Лайк</button>
+          <button class="btn btn-small ${isLiked ? 'btn-liked' : 'btn-secondary'}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">
+            ${isLiked ? '❤️ Убрать лайк' : '🤍 Лайк'}
+          </button>
           <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментарий</button>
         </div>
         <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
@@ -1012,6 +1057,127 @@
       
       // Load comments after element is added
       await loadPostComments(post.id);
+    }
+
+    async function toggleLike(postId) {
+      const isLiked = userLikesCache.has(postId);
+      const btn = document.getElementById(`like-btn-${postId}`);
+      
+      if (btn) btn.disabled = true;
+      
+      try {
+        if (isLiked) {
+          // Unlike
+          console.log('[LIKE] Unliking post:', postId);
+          const response = await apiCall(`/posts/${postId}/like`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            console.log('[LIKE] Successfully unliked!');
+            userLikesCache.delete(postId);
+            
+            // Update button
+            if (btn) {
+              btn.textContent = '🤍 Лайк';
+              btn.classList.remove('btn-liked');
+              btn.classList.add('btn-secondary');
+            }
+            
+            // Update counter
+            await updateLikesCount(postId);
+            
+            // Refresh favorites if on favorites tab
+            const favTab = document.getElementById('favoritesTab');
+            if (favTab.classList.contains('active')) {
+              await loadFavorites();
+            }
+            
+            alert('❌ Лайк убран!');
+          } else {
+            alert('❌ Ошибка при удалении лайка');
+          }
+        } else {
+          // Like
+          console.log('[LIKE] Liking post:', postId);
+          const response = await apiCall(`/posts/${postId}/like`, {
+            method: 'POST',
+            body: JSON.stringify({})
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            console.log('[LIKE] Successfully liked!');
+            userLikesCache.add(postId);
+            
+            // Update button
+            if (btn) {
+              btn.textContent = '❤️ Убрать лайк';
+              btn.classList.remove('btn-secondary');
+              btn.classList.add('btn-liked');
+            }
+            
+            // Update counter
+            await updateLikesCount(postId);
+            
+            alert('✅ Лайк добавлен!');
+          } else {
+            alert('❌ ' + (data.detail || 'Ошибка при лайке'));
+          }
+        }
+      } catch (e) {
+        console.error('[LIKE] Error:', e);
+        alert('❌ Ошибка: ' + e.message);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function updateLikesCount(postId) {
+      try {
+        const res = await apiCall(`/posts/${postId}/likes`);
+        const likes = await res.json();
+        const likesCount = Array.isArray(likes) ? likes.length : 0;
+        const el = document.getElementById(`likes-count-${postId}`);
+        if (el) el.textContent = `❤️ Лайков: ${likesCount}`;
+      } catch (e) {
+        console.error('[LIKE] Error updating count:', e);
+      }
+    }
+
+    async function loadFavorites() {
+      try {
+        console.log('[FAVORITES] Loading favorites...');
+        const container = document.getElementById('favoritesContainer');
+        container.innerHTML = '';
+        
+        // Get all posts that user has liked
+        const likedPostIds = Array.from(userLikesCache);
+        
+        if (likedPostIds.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.innerHTML = '<div class="empty-state-icon">⭐</div><p>У вас пока нет избранных постов. Поставьте лайк на пост, чтобы добавить его в избранное!</p>';
+          container.appendChild(empty);
+          return;
+        }
+        
+        // Load each liked post
+        for (const postId of likedPostIds) {
+          try {
+            const res = await apiCall(`/posts/${postId}`);
+            if (res.ok) {
+              const post = await res.json();
+              await renderPost(post, container);
+            }
+          } catch (e) {
+            console.error('[FAVORITES] Error loading post:', postId, e);
+          }
+        }
+      } catch (e) {
+        console.error('[FAVORITES] Error:', e);
+      }
     }
 
     async function loadUsers() {
@@ -1253,31 +1419,6 @@
       }
     }
 
-    async function likePost(postId) {
-      console.log('[LIKE] Liking post:', postId);
-      try {
-        const response = await apiCall(`/posts/${postId}/like`, {
-          method: 'POST',
-          body: JSON.stringify({})
-        });
-        
-        const data = await response.json();
-        console.log('[LIKE] Response:', {status: response.status, data});
-        
-        if (response.ok) {
-          console.log('[LIKE] Successfully liked!');
-          alert('✅ Лайк добавлен!');
-          // Reload posts to update counts
-          await loadPosts();
-        } else {
-          alert('❌ ' + (data.detail || 'Ошибка при лайке'));
-        }
-      } catch (e) {
-        console.error('[LIKE] Error:', e);
-        alert('❌ Ошибка: ' + e.message);
-      }
-    }
-
     function toggleComments(postId) {
       const section = document.getElementById(`comments-section-${postId}`);
       if (section) {
@@ -1313,7 +1454,15 @@
           input.value = '';
           alert('✅ Комментарий добавлен!');
           await loadPostComments(postId);
-          await loadPosts(); // Reload to update counter
+          
+          // Update comments count
+          const commentsRes = await apiCall(`/posts/${postId}/comments`);
+          if (commentsRes.ok) {
+            const comments = await commentsRes.json();
+            const count = Array.isArray(comments) ? comments.length : 0;
+            const el = document.getElementById(`comments-count-${postId}`);
+            if (el) el.textContent = `💬 Комментариев: ${count}`;
+          }
         } else {
           alert('❌ ' + (data.detail || 'Ошибка при создании комментария'));
         }
