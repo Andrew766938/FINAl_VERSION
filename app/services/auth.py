@@ -26,16 +26,34 @@ class AuthService(BaseService):
 
     @classmethod
     def create_token(cls, user_id: int) -> str:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        payload = {"user_id": user_id, "exp": expire.timestamp()}
-        return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        """Create JWT token"""
+        try:
+            expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            payload = {"user_id": user_id, "exp": expire.timestamp()}
+            token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+            print(f"[TOKEN] ✅ Token created for user_id: {user_id}")
+            return token
+        except Exception as e:
+            print(f"[TOKEN] ❌ Error creating token: {e}")
+            raise
 
     @classmethod
     def verify_token(cls, token: str) -> int:
+        """Verify JWT token and return user_id"""
         try:
+            print(f"[TOKEN] Verifying token...")
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-            return payload["user_id"]
-        except:
+            user_id = payload.get("user_id")
+            print(f"[TOKEN] ✅ Token verified, user_id: {user_id}")
+            return user_id
+        except jwt.ExpiredSignatureError:
+            print(f"[TOKEN] ❌ Token expired")
+            return None
+        except jwt.InvalidTokenError as e:
+            print(f"[TOKEN] ❌ Invalid token: {e}")
+            return None
+        except Exception as e:
+            print(f"[TOKEN] ❌ Error verifying token: {e}")
             return None
 
     async def ensure_role(self):
@@ -48,7 +66,7 @@ class AuthService(BaseService):
                 role = RoleModel(id=1, name="user", description="Default user role")
                 self.db.session.add(role)
                 await self.db.commit()
-                print("[AUTH] Default role created")
+                print("[AUTH] ✅ Default role created")
         except Exception as e:
             print(f"[AUTH] Error ensuring role: {e}")
 
@@ -81,18 +99,17 @@ class AuthService(BaseService):
             self.db.session.add(user)
             await self.db.commit()
             
-            print(f"[AUTH] User registered: {user.id}")
+            print(f"[AUTH] ✅ User registered: {user.id}")
             
             # Create token
             token = self.create_token(user.id)
-            print(f"[AUTH] Token created")
             
             return user, token
         except IntegrityError as e:
             print(f"[AUTH] Integrity error: {e}")
             raise ValueError("User already exists")
         except Exception as e:
-            print(f"[AUTH] Registration error: {e}")
+            print(f"[AUTH] ❌ Registration error: {e}")
             import traceback
             traceback.print_exc()
             raise
@@ -102,7 +119,7 @@ class AuthService(BaseService):
         Login user and return user + token
         """
         try:
-            print(f"[AUTH] Login: {email}")
+            print(f"[AUTH] Login attempt: {email}")
             
             # Get user
             result = await self.db.session.execute(
@@ -111,33 +128,43 @@ class AuthService(BaseService):
             user = result.scalars().first()
             
             if not user:
-                print(f"[AUTH] User not found: {email}")
+                print(f"[AUTH] ❌ User not found: {email}")
                 raise ValueError("Invalid email or password")
             
             # Verify password
             if not self.verify_password(password, user.hashed_password):
-                print(f"[AUTH] Password incorrect for {email}")
+                print(f"[AUTH] ❌ Password incorrect for {email}")
                 raise ValueError("Invalid email or password")
             
             # Create token
             token = self.create_token(user.id)
-            print(f"[AUTH] Login successful")
+            print(f"[AUTH] ✅ Login successful for {email}")
             
             return user, token
         except ValueError:
             raise
         except Exception as e:
-            print(f"[AUTH] Login error: {e}")
+            print(f"[AUTH] ❌ Login error: {e}")
             import traceback
             traceback.print_exc()
             raise ValueError("Login failed")
 
     async def get_user(self, user_id: int):
-        result = await self.db.session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
-        return result.scalars().first()
+        """Get user by ID"""
+        try:
+            result = await self.db.session.execute(
+                select(UserModel).where(UserModel.id == user_id)
+            )
+            return result.scalars().first()
+        except Exception as e:
+            print(f"[AUTH] Error getting user: {e}")
+            return None
 
     async def get_all_users(self):
-        result = await self.db.session.execute(select(UserModel))
-        return result.scalars().all()
+        """Get all users"""
+        try:
+            result = await self.db.session.execute(select(UserModel))
+            return result.scalars().all()
+        except Exception as e:
+            print(f"[AUTH] Error getting users: {e}")
+            return []
