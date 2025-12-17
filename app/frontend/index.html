@@ -718,6 +718,27 @@
     let currentUser = null;
     let authToken = null;
     
+    // ✅ ФУНКЦИЯ ДЛЯ ОТПРАВКИ ЗАПРОСОВ С ТОКЕНОМ
+    async function apiCall(endpoint, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+      };
+      
+      // ДОБАВЛЯЕМ ТОКЕН В AUTHORIZATION HEADER
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+        console.log('[CLIENT] Using Authorization header with token');
+      }
+      
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers
+      });
+      
+      return response;
+    }
+    
     function switchAuthTab(tab) {
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
@@ -752,7 +773,6 @@
       try {
         console.log('[CLIENT] Login attempt:', email);
         
-        // ИСПРАВЛЕНО: Отправляем JSON в Body, не в query параметрах
         const response = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
           headers: {
@@ -771,7 +791,7 @@
         if (response.ok && data.access_token) {
           authToken = data.access_token;
           currentUser = data.user || { username: email.split('@')[0] };
-          console.log('[CLIENT] ✅ Login successful');
+          console.log('[CLIENT] ✅ Login successful, token stored');
           showStatus('loginStatus', '✅ Успешный вход!', 'success');
           setTimeout(showApp, 800);
         } else {
@@ -816,7 +836,6 @@
       try {
         console.log('[CLIENT] Register attempt:', email);
         
-        // ИСПРАВЛЕНО: Отправляем JSON в Body
         const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: {
@@ -836,7 +855,7 @@
         if (response.ok && data.access_token) {
           authToken = data.access_token;
           currentUser = data.user || { username: username };
-          console.log('[CLIENT] ✅ Register successful');
+          console.log('[CLIENT] ✅ Register successful, token stored');
           showStatus('regStatus', '✅ Регистрация успешна! Входим...', 'success');
           setTimeout(showApp, 1200);
         } else {
@@ -883,7 +902,37 @@
     
     async function handleCreatePost(e) {
       e.preventDefault();
-      console.log('[CLIENT] Create post');
+      const title = document.getElementById('postTitle').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+      
+      if (!title || !content) {
+        alert('❌ Заполните все поля');
+        return;
+      }
+      
+      try {
+        console.log('[CLIENT] Creating post...');
+        const response = await apiCall('/posts/', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: title,
+            content: content
+          })
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+          console.log('[CLIENT] ✅ Post created');
+          alert('✅ Пост успешно создан!');
+          document.getElementById('createPostForm').reset();
+        } else {
+          console.error('[CLIENT] Error:', data);
+          alert('❌ Ошибка: ' + (data.detail || 'Не удалось создать пост'));
+        }
+      } catch (error) {
+        console.error('[CLIENT] Error:', error);
+        alert('❌ Ошибка: ' + error.message);
+      }
     }
   </script>
 </body>
