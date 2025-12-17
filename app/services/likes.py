@@ -84,6 +84,10 @@ class LikeService:
         like = await self.db.likes.get_like_by_id(like_id)
         return like
 
+    async def get_like_by_post_and_user(self, post_id: int, user_id: int):
+        """Get a like by post and user"""
+        return await self.db.likes.get_like_by_post_and_user(post_id, user_id)
+
     async def is_liked(self, user_id: int, post_id: int) -> bool:
         """Check if a post is liked by a user"""
         like = await self.db.likes.get_like(user_id, post_id)
