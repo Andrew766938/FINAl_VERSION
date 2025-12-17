@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from starlette.responses import Response
 import traceback
+import json
 
 from app.api.dependencies import DBDep, get_current_user
 from app.models.users import UserModel
@@ -9,7 +10,7 @@ from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# Pydantic моделиы для валидации
+# Pydantic модели для валидации
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -29,7 +30,7 @@ async def register_user(
     Registration endpoint - accepts JSON body
     """
     try:
-        print(f"\n[API] Register endpoint called")
+        print(f"\n[API] 🇖 Register endpoint called")
         print(f"[API] Email: {data.email}, Name: {data.name}")
         
         if not data.email or not data.password or not data.name:
@@ -41,7 +42,7 @@ async def register_user(
         service = AuthService(db)
         user, token = await service.register_and_login(data.email, data.password, data.name)
         
-        print(f"[API] ✅ Registration successful")
+        print(f"[API] ✅ Registration successful for {user.email}")
         return {
             "access_token": token,
             "user": {
@@ -78,10 +79,11 @@ async def login_user(
     Returns access_token in response
     """
     try:
-        print(f"\n[API] Login endpoint called")
+        print(f"\n[API] 🚨 Login endpoint called")
         print(f"[API] Email: {data.email}")
         
         if not data.email or not data.password:
+            print(f"[API] ❌ Missing email or password")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email and password are required"
@@ -90,8 +92,10 @@ async def login_user(
         service = AuthService(db)
         user, token = await service.login(data.email, data.password)
         
-        print(f"[API] ✅ Login successful for user: {user.email}")
-        response.set_cookie("access_token", token, httponly=True)
+        print(f"[API] ✅ Login successful for {user.email}")
+        # Set cookie as backup
+        response.set_cookie("access_token", token, httponly=True, max_age=1800)
+        
         return {
             "access_token": token,
             "user": {
@@ -121,6 +125,7 @@ async def login_user(
 async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user)) -> dict:
     """Get current authenticated user"""
     try:
+        print(f"[API] 📁 Getting current user")
         return {
             "id": current_user.id,
             "username": current_user.name,
@@ -138,6 +143,7 @@ async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user))
 async def get_user(db: DBDep, user_id: int) -> dict:
     """Get user by ID"""
     try:
+        print(f"[API] 👤 Getting user {user_id}")
         service = AuthService(db)
         user = await service.get_user(user_id)
         if not user:
@@ -164,6 +170,7 @@ async def get_user(db: DBDep, user_id: int) -> dict:
 async def get_all_users(db: DBDep) -> list:
     """Get all users"""
     try:
+        print(f"[API] 👫 Getting all users")
         service = AuthService(db)
         users = await service.get_all_users()
         return [
@@ -188,6 +195,7 @@ async def logout(response: Response) -> dict:
     """Logout and clear authentication cookie"""
     try:
         response.delete_cookie("access_token")
+        print(f"[API] 🚴 User logged out")
         return {"status": "OK", "message": "Logged out successfully"}
     except Exception as e:
         print(f"[API] ❌ Logout error: {e}")
