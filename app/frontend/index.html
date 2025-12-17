@@ -659,7 +659,7 @@
                 <label for="postContent">Содержание</label>
                 <textarea id="postContent" required placeholder="Поделитесь своими мыслями..." rows="5"></textarea>
               </div>
-              <button type="submit" class="btn btn-primary">Опубликовать</button>
+              <button type="submit" class="btn btn-primary" id="createPostBtn">Опубликовать</button>
             </form>
           </div>
           
@@ -891,14 +891,16 @@
         data.forEach(post => {
           const el = document.createElement('div');
           el.className = 'post';
+          const authorName = post.author_name || post.user?.name || 'Неизвестный автор';
+          const authorEmail = post.author_email || post.user?.email || 'user';
           el.innerHTML = `
             <div class="post-header">
               <div>
                 <div class="post-author">
-                  ${createUserAvatar(post.author_name || '??').outerHTML}
+                  ${createUserAvatar(authorName).outerHTML}
                   <div>
-                    <div style="font-weight: 600; color: var(--text-white);">${post.author_name || 'Неизвестный автор'}</div>
-                    <div class="post-meta">@${post.author_email || 'user'} • ID: ${post.id}</div>
+                    <div style="font-weight: 600; color: var(--text-white);">${authorName}</div>
+                    <div class="post-meta">@${authorEmail} • ID: ${post.id}</div>
                   </div>
                 </div>
                 <h3>${post.title}</h3>
@@ -951,8 +953,23 @@
 
           const friendBtn = document.createElement('button');
           friendBtn.className = 'btn btn-small btn-secondary';
-          friendBtn.textContent = 'Добавить в друзья';
-          friendBtn.onclick = () => alert('Логика добавления в друзья пока не реализована');
+          friendBtn.textContent = '❤️ Добавить';
+          friendBtn.type = 'button';
+          
+          const isAlreadyFriend = friendshipsCache.some(f => f.user_id === currentUser.id && f.friend_id === user.id);
+          if (isAlreadyFriend) {
+            friendBtn.textContent = '✅ Друг';
+            friendBtn.disabled = true;
+            friendBtn.style.opacity = '0.6';
+            friendBtn.style.cursor = 'default';
+          } else if (user.id === currentUser.id) {
+            friendBtn.textContent = '👑 Вы';
+            friendBtn.disabled = true;
+            friendBtn.style.opacity = '0.6';
+            friendBtn.style.cursor = 'default';
+          } else {
+            friendBtn.onclick = async () => await addFriend(user.id, friendBtn);
+          }
 
           actions.appendChild(friendBtn);
 
@@ -961,8 +978,6 @@
 
           container.appendChild(card);
         });
-
-        renderFriends();
       } catch (e) {
         console.error('[CLIENT] loadUsers error', e);
       }
@@ -977,6 +992,27 @@
         renderFriends();
       } catch (e) {
         console.error('[CLIENT] loadFriendships error', e);
+      }
+    }
+
+    async function addFriend(friendId, buttonElement) {
+      try {
+        const res = await apiCall(`/friendships/${friendId}`, {
+          method: 'POST',
+          body: JSON.stringify({})
+        });
+        
+        if (res.ok) {
+          await loadFriendships();
+          await loadUsers();
+          alert('✅ Друг добавлен!');
+        } else {
+          const error = await res.json();
+          alert('❌ ' + (error.detail || 'Ошибка'));
+        }
+      } catch (e) {
+        console.error('[CLIENT] addFriend error', e);
+        alert('❌ Ошибка: ' + e.message);
       }
     }
 
@@ -1054,19 +1090,26 @@
       e.preventDefault();
       const title = document.getElementById('postTitle').value.trim();
       const content = document.getElementById('postContent').value.trim();
+      const createBtn = document.getElementById('createPostBtn');
       
       if (!title || !content) {
         alert('❌ Заполните все поля');
         return;
       }
       
+      createBtn.disabled = true;
+      
       try {
+        console.log('[CLIENT] Creating post with title:', title);
         const response = await apiCall('/posts/', {
           method: 'POST',
           body: JSON.stringify({ title, content })
         });
         
         const data = await response.json();
+        console.log('[CLIENT] Response status:', response.status);
+        console.log('[CLIENT] Response:', data);
+        
         if (response.ok) {
           alert('✅ Пост успешно создан!');
           document.getElementById('createPostForm').reset();
@@ -1075,7 +1118,10 @@
           alert('❌ Ошибка: ' + (data.detail || 'Не удалось создать пост'));
         }
       } catch (error) {
+        console.error('[CLIENT] Error:', error);
         alert('❌ Ошибка: ' + error.message);
+      } finally {
+        createBtn.disabled = false;
       }
     }
   </script>
