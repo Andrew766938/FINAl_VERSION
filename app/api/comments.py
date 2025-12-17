@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status, HTTPException
-import traceback
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import DBDep, get_current_user
 from app.services.comments import CommentService
@@ -9,59 +9,15 @@ from app.models.users import UserModel
 router = APIRouter(prefix="/comments", tags=["comments"])
 
 
-@router.post(
-    "/{post_id}",
-    response_model=dict,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_comment(
-    post_id: int,
-    comment_data: CommentCreate,
-    db: DBDep,
-    current_user: UserModel = Depends(get_current_user),
-):
-    """Create a comment on a post"""
-    try:
-        print(f"[API] Creating comment on post {post_id} by user {current_user.id}")
-        service = CommentService(db)
-        comment = await service.create_comment(post_id, comment_data, current_user.id)
-        await db.commit()
-        print(f"[API] Comment created successfully with ID {comment.id}")
-        return {
-            "id": comment.id,
-            "post_id": comment.post_id,
-            "user_id": comment.user_id,
-            "content": comment.content,
-            "created_at": comment.created_at,
-            "author_name": current_user.name,
-            "author_email": current_user.email,
-        }
-    except Exception as e:
-        print(f"[API] Error creating comment: {e}")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create comment"
-        )
-
-
-@router.get(
-    "/{comment_id}",
-    response_model=dict,
-)
+@router.get("/{comment_id}")
 async def get_comment(
     comment_id: int,
     db: DBDep,
 ):
-    """Get a specific comment by ID"""
+    """Get a specific comment"""
     try:
         service = CommentService(db)
         comment = await service.get_comment(comment_id)
-        if not comment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Comment not found"
-            )
         return {
             "id": comment.id,
             "post_id": comment.post_id,
@@ -70,51 +26,12 @@ async def get_comment(
             "created_at": comment.created_at,
             "author_username": comment.user.name if comment.user else "Unknown"
         }
-    except HTTPException:
-        raise
     except Exception as e:
         print(f"[API] Error getting comment: {e}")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get comment"
-        )
+        raise HTTPException(status_code=500, detail="Failed to get comment")
 
 
-@router.put(
-    "/{comment_id}",
-    response_model=dict,
-)
-async def update_comment(
-    comment_id: int,
-    comment_data: CommentCreate,
-    db: DBDep,
-    current_user: UserModel = Depends(get_current_user),
-):
-    """Update a comment"""
-    try:
-        service = CommentService(db)
-        comment = await service.update_comment(comment_id, comment_data, current_user.id)
-        return {
-            "id": comment.id,
-            "post_id": comment.post_id,
-            "user_id": comment.user_id,
-            "content": comment.content,
-            "created_at": comment.created_at,
-        }
-    except Exception as e:
-        print(f"[API] Error updating comment: {e}")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update comment"
-        )
-
-
-@router.delete(
-    "/{comment_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
+@router.delete("/{comment_id}")
 async def delete_comment(
     comment_id: int,
     db: DBDep,
@@ -127,8 +44,4 @@ async def delete_comment(
         return None
     except Exception as e:
         print(f"[API] Error deleting comment: {e}")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete comment"
-        )
+        raise HTTPException(status_code=500, detail="Failed to delete comment")
