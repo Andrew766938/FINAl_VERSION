@@ -740,7 +740,6 @@
     let authToken = null;
     let allUsersCache = [];
     let friendshipsCache = [];
-    let postsCache = [];
 
     async function apiCall(endpoint, options = {}) {
       const headers = {
@@ -907,7 +906,6 @@
       document.getElementById('profileContainer').innerHTML = '';
       allUsersCache = [];
       friendshipsCache = [];
-      postsCache = [];
     }
     
     function switchTab(e, tab) {
@@ -931,7 +929,6 @@
         console.log('[POSTS] Loading posts...');
         const res = await apiCall('/posts/');
         const data = await res.json();
-        postsCache = data;
         const container = document.getElementById('postsContainer');
         container.innerHTML = '';
 
@@ -943,47 +940,78 @@
           return;
         }
 
-        data.forEach(post => {
-          const el = document.createElement('div');
-          el.className = 'post';
-          const authorName = post.author_name || post.user?.name || 'Неизвестный автор';
-          const authorEmail = post.author_email || post.user?.email || 'user';
-          el.innerHTML = `
-            <div class="post-header">
-              <div style="flex: 1;">
-                <div class="post-author">
-                  ${createUserAvatar(authorName).outerHTML}
-                  <div>
-                    <div style="font-weight: 600; color: var(--text-white);">${authorName}</div>
-                    <div class="post-meta">@${authorEmail}</div>
-                  </div>
-                </div>
-                <h3>${post.title}</h3>
-              </div>
-            </div>
-            <p>${post.content}</p>
-            <div class="post-stats">
-              <span id="likes-count-${post.id}">❤️ Лайков: 0</span>
-            </div>
-            <div class="post-actions">
-              <button class="btn btn-small btn-secondary" onclick="likePost(${post.id})">❤️ Лайк</button>
-              <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментарий</button>
-            </div>
-            <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
-              <div class="comment-form">
-                <input type="text" id="comment-input-${post.id}" placeholder="Напишите комментарий...">
-                <button class="btn btn-small btn-secondary" onclick="submitComment(${post.id})">Отправить</button>
-              </div>
-              <div id="comments-list-${post.id}"></div>
-            </div>
-          `;
-          container.appendChild(el);
-          loadPostComments(post.id);
-          updateLikesCount(post.id);
-        });
+        for (const post of data) {
+          await renderPost(post, container);
+        }
       } catch (e) {
         console.error('[POSTS] Error loading posts:', e);
       }
+    }
+
+    async function renderPost(post, container) {
+      const el = document.createElement('div');
+      el.className = 'post';
+      const authorName = post.author_name || post.user?.name || 'Неизвестный автор';
+      const authorEmail = post.author_email || post.user?.email || 'user';
+      
+      // Get likes and comments count
+      let likesCount = 0;
+      let commentsCount = 0;
+      
+      try {
+        const likesRes = await apiCall(`/posts/${post.id}/likes`);
+        if (likesRes.ok) {
+          const likes = await likesRes.json();
+          likesCount = Array.isArray(likes) ? likes.length : 0;
+        }
+      } catch (e) {
+        console.error('[LIKES] Error:', e);
+      }
+      
+      try {
+        const commentsRes = await apiCall(`/posts/${post.id}/comments`);
+        if (commentsRes.ok) {
+          const comments = await commentsRes.json();
+          commentsCount = Array.isArray(comments) ? comments.length : 0;
+        }
+      } catch (e) {
+        console.error('[COMMENTS] Error:', e);
+      }
+      
+      el.innerHTML = `
+        <div class="post-header">
+          <div style="flex: 1;">
+            <div class="post-author">
+              ${createUserAvatar(authorName).outerHTML}
+              <div>
+                <div style="font-weight: 600; color: var(--text-white);">${authorName}</div>
+                <div class="post-meta">@${authorEmail}</div>
+              </div>
+            </div>
+            <h3>${post.title}</h3>
+          </div>
+        </div>
+        <p>${post.content}</p>
+        <div class="post-stats">
+          <span id="likes-count-${post.id}">❤️ Лайков: ${likesCount}</span>
+          <span id="comments-count-${post.id}">💬 Комментариев: ${commentsCount}</span>
+        </div>
+        <div class="post-actions">
+          <button class="btn btn-small btn-secondary" onclick="likePost(${post.id})">❤️ Лайк</button>
+          <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментарий</button>
+        </div>
+        <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
+          <div class="comment-form">
+            <input type="text" id="comment-input-${post.id}" placeholder="Напишите комментарий...">
+            <button class="btn btn-small btn-secondary" onclick="submitComment(${post.id})">Отправить</button>
+          </div>
+          <div id="comments-list-${post.id}"></div>
+        </div>
+      `;
+      container.appendChild(el);
+      
+      // Load comments after element is added
+      await loadPostComments(post.id);
     }
 
     async function loadUsers() {
@@ -1026,6 +1054,7 @@
           const friendBtn = document.createElement('button');
           friendBtn.className = 'btn btn-small btn-secondary';
           friendBtn.type = 'button';
+          friendBtn.id = `friend-btn-${user.id}`;
           
           const isAlreadyFriend = friendshipsCache.some(f => f.user_id === currentUser.id && f.friend_id === user.id);
           if (isAlreadyFriend) {
@@ -1041,10 +1070,7 @@
           } else {
             friendBtn.textContent = '❤️ Добавить';
             friendBtn.onclick = async () => {
-              friendBtn.disabled = true;
-              console.log('[FRIENDS] Adding friend:', user.id);
               await addFriend(user.id);
-              friendBtn.disabled = false;
             };
           }
 
@@ -1080,6 +1106,12 @@
     async function addFriend(friendId) {
       try {
         console.log('[FRIENDS] Attempting to add friend:', friendId);
+        const btn = document.getElementById(`friend-btn-${friendId}`);
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = '⏳ Добавляем...';
+        }
+        
         const res = await apiCall(`/friendships/${friendId}`, {
           method: 'POST',
           body: JSON.stringify({})
@@ -1090,14 +1122,23 @@
         
         if (res.ok) {
           console.log('[FRIENDS] Successfully added friend');
+          alert('✅ Друг добавлен!');
           await loadFriendships();
           await loadUsers();
-          alert('✅ Друг добавлен!');
         } else {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '❤️ Добавить';
+          }
           alert('❌ ' + (data.detail || 'Ошибка'));
         }
       } catch (e) {
         console.error('[FRIENDS] Error:', e);
+        const btn = document.getElementById(`friend-btn-${friendId}`);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '❤️ Добавить';
+        }
         alert('❌ Ошибка: ' + e.message);
       }
     }
@@ -1105,10 +1146,10 @@
     function renderFriends() {
       const container = document.getElementById('friendsContainer');
       container.innerHTML = '';
-      if (!currentUser || !allUsersCache.length || !friendshipsCache.length) {
+      if (!currentUser || !allUsersCache.length) {
         const empty = document.createElement('div');
         empty.className = 'empty-state';
-        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>Пока нет данных о друзьях.</p>';
+        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>Загрузка...</p>';
         container.appendChild(empty);
         return;
       }
@@ -1226,6 +1267,7 @@
         if (response.ok) {
           console.log('[LIKE] Successfully liked!');
           alert('✅ Лайк добавлен!');
+          // Reload posts to update counts
           await loadPosts();
         } else {
           alert('❌ ' + (data.detail || 'Ошибка при лайке'));
@@ -1236,22 +1278,14 @@
       }
     }
 
-    async function updateLikesCount(postId) {
-      try {
-        const res = await apiCall(`/posts/${postId}/likes`);
-        const likes = await res.json();
-        const likesCount = Array.isArray(likes) ? likes.length : 0;
-        const el = document.getElementById(`likes-count-${postId}`);
-        if (el) el.textContent = `❤️ Лайков: ${likesCount}`;
-      } catch (e) {
-        console.error('[LIKE] Error updating count:', e);
-      }
-    }
-
     function toggleComments(postId) {
       const section = document.getElementById(`comments-section-${postId}`);
       if (section) {
-        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+        const isVisible = section.style.display !== 'none';
+        section.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+          loadPostComments(postId);
+        }
       }
     }
 
@@ -1279,6 +1313,7 @@
           input.value = '';
           alert('✅ Комментарий добавлен!');
           await loadPostComments(postId);
+          await loadPosts(); // Reload to update counter
         } else {
           alert('❌ ' + (data.detail || 'Ошибка при создании комментария'));
         }
@@ -1297,13 +1332,13 @@
         if (!listEl) return;
         
         if (!Array.isArray(comments) || comments.length === 0) {
-          listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">Нет комментариев</p>';
+          listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 10px 0;">Нет комментариев</p>';
           return;
         }
         
         listEl.innerHTML = comments.map(c => `
           <div class="comment-item">
-            <div class="comment-author">${c.author_username}</div>
+            <div class="comment-author">${c.author_username || 'Неизвестный'}</div>
             <div class="comment-content">${c.content}</div>
           </div>
         `).join('');
