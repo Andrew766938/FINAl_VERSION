@@ -548,6 +548,53 @@
       font-size: 3rem;
       margin-bottom: 20px;
     }
+
+    /* Comment section */
+    .comments-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(168, 85, 247, 0.15);
+    }
+
+    .comment-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .comment-form input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+    }
+
+    .comment-form input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .comment-item {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(168, 85, 247, 0.1);
+      font-size: 0.9rem;
+    }
+
+    .comment-item:last-child {
+      border-bottom: none;
+    }
+
+    .comment-author {
+      font-weight: 600;
+      color: var(--primary-light);
+      margin-bottom: 4px;
+    }
+
+    .comment-content {
+      color: var(--text-light);
+    }
     
     ::-webkit-scrollbar {
       width: 8px;
@@ -693,6 +740,7 @@
     let authToken = null;
     let allUsersCache = [];
     let friendshipsCache = [];
+    let postsCache = [];
 
     async function apiCall(endpoint, options = {}) {
       const headers = {
@@ -859,6 +907,7 @@
       document.getElementById('profileContainer').innerHTML = '';
       allUsersCache = [];
       friendshipsCache = [];
+      postsCache = [];
     }
     
     function switchTab(e, tab) {
@@ -882,6 +931,7 @@
         console.log('[POSTS] Loading posts...');
         const res = await apiCall('/posts/');
         const data = await res.json();
+        postsCache = data;
         const container = document.getElementById('postsContainer');
         container.innerHTML = '';
 
@@ -913,14 +963,23 @@
             </div>
             <p>${post.content}</p>
             <div class="post-stats">
-              <span>♥️ Лайков: ${post.likes_count || 0}</span>
+              <span id="likes-count-${post.id}">❤️ Лайков: 0</span>
             </div>
             <div class="post-actions">
               <button class="btn btn-small btn-secondary" onclick="likePost(${post.id})">❤️ Лайк</button>
-              <button class="btn btn-small btn-secondary" onclick="commentPost(${post.id})">💬 Комментарий</button>
+              <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментарий</button>
+            </div>
+            <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
+              <div class="comment-form">
+                <input type="text" id="comment-input-${post.id}" placeholder="Напишите комментарий...">
+                <button class="btn btn-small btn-secondary" onclick="submitComment(${post.id})">Отправить</button>
+              </div>
+              <div id="comments-list-${post.id}"></div>
             </div>
           `;
           container.appendChild(el);
+          loadPostComments(post.id);
+          updateLikesCount(post.id);
         });
       } catch (e) {
         console.error('[POSTS] Error loading posts:', e);
@@ -1125,7 +1184,7 @@
       }
       
       createBtn.disabled = true;
-      console.log('[POST] Creating post:', {title, content, token: authToken ? 'EXISTS' : 'MISSING'});
+      console.log('[POST] Creating post with title:', title);
       
       try {
         const response = await apiCall('/posts/', {
@@ -1153,14 +1212,91 @@
       }
     }
 
-    function likePost(postId) {
-      console.log('[LIKE] Liked post:', postId);
-      alert('👍 Лайк добавлен! (Функция в разработке)');
+    async function likePost(postId) {
+      console.log('[LIKE] Liking post:', postId);
+      try {
+        const response = await apiCall(`/likes/${postId}`, {
+          method: 'POST',
+          body: JSON.stringify({})
+        });
+        
+        const data = await response.json();
+        console.log('[LIKE] Response:', {status: response.status, data});
+        
+        if (response.ok) {
+          console.log('[LIKE] Successfully liked!');
+          updateLikesCount(postId);
+        } else {
+          alert('❌ ' + (data.detail || 'Ошибка при лайке'));
+        }
+      } catch (e) {
+        console.error('[LIKE] Error:', e);
+        alert('❌ Ошибка: ' + e.message);
+      }
     }
 
-    function commentPost(postId) {
-      console.log('[COMMENT] Commenting on post:', postId);
-      alert('💬 Комментарий! (Функция в разработке)');
+    async function updateLikesCount(postId) {
+      try {
+        const res = await apiCall(`/likes/user/${currentUser.id}`);
+        const likes = await res.json();
+        const postLikes = likes.filter(l => l.post_id === postId).length;
+        const el = document.getElementById(`likes-count-${postId}`);
+        if (el) el.textContent = `❤️ Лайков: ${postLikes}`;
+      } catch (e) {
+        console.error('[LIKE] Error updating count:', e);
+      }
+    }
+
+    function toggleComments(postId) {
+      const section = document.getElementById(`comments-section-${postId}`);
+      if (section) {
+        section.style.display = section.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    async function submitComment(postId) {
+      const input = document.getElementById(`comment-input-${postId}`);
+      const content = input.value.trim();
+      
+      if (!content) {
+        alert('❌ Напишите комментарий');
+        return;
+      }
+      
+      try {
+        console.log('[COMMENT] Creating comment on post:', postId);
+        const response = await apiCall(`/comments/${postId}`, {
+          method: 'POST',
+          body: JSON.stringify({ content })
+        });
+        
+        const data = await response.json();
+        console.log('[COMMENT] Response:', {status: response.status, data});
+        
+        if (response.ok) {
+          console.log('[COMMENT] Successfully created!');
+          input.value = '';
+          await loadPostComments(postId);
+        } else {
+          alert('❌ ' + (data.detail || 'Ошибка при создании комментария'));
+        }
+      } catch (e) {
+        console.error('[COMMENT] Error:', e);
+        alert('❌ Ошибка: ' + e.message);
+      }
+    }
+
+    async function loadPostComments(postId) {
+      try {
+        // This would need a GET endpoint to fetch comments for a post
+        // For now, showing empty comments
+        const listEl = document.getElementById(`comments-list-${postId}`);
+        if (listEl) {
+          listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">Нет комментариев</p>';
+        }
+      } catch (e) {
+        console.error('[COMMENT] Error loading comments:', e);
+      }
     }
   </script>
 </body>
