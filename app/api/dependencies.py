@@ -23,18 +23,40 @@ PaginationDep = Annotated[PaginationParams, Depends()]
 
 
 def get_token(request: Request) -> str:
-    token = request.cookies.get("access_token", None)
-    if token is None:
-        raise NoAccessTokenHTTPError
-    return token
+    """Get token from Authorization header or cookies"""
+    # Очень токен из Authorization header (приоритет)
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        parts = auth_header.split()
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            token = parts[1]
+            print(f"[AUTH] Token from Authorization header: {token[:20]}...")
+            return token
+    
+    # Опасная токен из cookies
+    token = request.cookies.get("access_token")
+    if token:
+        print(f"[AUTH] Token from cookies: {token[:20]}...")
+        return token
+    
+    print(f"[AUTH] ❌ No token found in Authorization header or cookies")
+    raise NoAccessTokenHTTPError
 
 
 def get_current_user_id(token: str = Depends(get_token)) -> int:
+    """Extract user ID from token"""
     try:
+        print(f"[AUTH] Decoding token...")
         data = AuthService.decode_token(token)
-    except InvalidJWTTokenError:
+        user_id = data.get("user_id")
+        print(f"[AUTH] ✅ Token decoded successfully, user_id: {user_id}")
+        return user_id
+    except InvalidJWTTokenError as e:
+        print(f"[AUTH] ❌ Invalid token: {e}")
         raise InvalidTokenHTTPError
-    return data["user_id"]
+    except Exception as e:
+        print(f"[AUTH] ❌ Token error: {e}")
+        raise InvalidTokenHTTPError
 
 
 UserIdDep = Annotated[int, Depends(get_current_user_id)]
@@ -52,7 +74,15 @@ async def get_current_user(
     db: DBDep,
     user_id: int = Depends(get_current_user_id),
 ) -> UserModel:
-    user = await db.users.get_one_or_none(id=user_id)
-    if not user:
+    """Get current authenticated user from database"""
+    try:
+        print(f"[AUTH] Getting user with ID: {user_id}")
+        user = await db.users.get_one_or_none(id=user_id)
+        if not user:
+            print(f"[AUTH] ❌ User not found with ID: {user_id}")
+            raise InvalidTokenHTTPError
+        print(f"[AUTH] ✅ User found: {user.email}")
+        return user
+    except Exception as e:
+        print(f"[AUTH] ❌ Error getting user: {e}")
         raise InvalidTokenHTTPError
-    return user
