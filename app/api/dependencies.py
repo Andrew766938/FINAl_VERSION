@@ -24,19 +24,19 @@ PaginationDep = Annotated[PaginationParams, Depends()]
 
 def get_token(request: Request) -> str:
     """Get token from Authorization header or cookies"""
-    # Очень токен из Authorization header (приоритет)
+    # Извлекаем токен из Authorization header (приоритет)
     auth_header = request.headers.get("Authorization")
     if auth_header:
         parts = auth_header.split()
         if len(parts) == 2 and parts[0].lower() == "bearer":
             token = parts[1]
-            print(f"[AUTH] Token from Authorization header: {token[:20]}...")
+            print(f"[AUTH] ✅ Token from Authorization header: {token[:20]}...")
             return token
     
-    # Опасная токен из cookies
+    # Извлекаем токен из cookies
     token = request.cookies.get("access_token")
     if token:
-        print(f"[AUTH] Token from cookies: {token[:20]}...")
+        print(f"[AUTH] ✅ Token from cookies: {token[:20]}...")
         return token
     
     print(f"[AUTH] ❌ No token found in Authorization header or cookies")
@@ -47,8 +47,10 @@ def get_current_user_id(token: str = Depends(get_token)) -> int:
     """Extract user ID from token"""
     try:
         print(f"[AUTH] Decoding token...")
-        data = AuthService.decode_token(token)
-        user_id = data.get("user_id")
+        user_id = AuthService.verify_token(token)
+        if not user_id:
+            print(f"[AUTH] ❌ Token verification failed")
+            raise InvalidTokenHTTPError
         print(f"[AUTH] ✅ Token decoded successfully, user_id: {user_id}")
         return user_id
     except InvalidJWTTokenError as e:
@@ -56,6 +58,8 @@ def get_current_user_id(token: str = Depends(get_token)) -> int:
         raise InvalidTokenHTTPError
     except Exception as e:
         print(f"[AUTH] ❌ Token error: {e}")
+        import traceback
+        traceback.print_exc()
         raise InvalidTokenHTTPError
 
 
@@ -85,4 +89,6 @@ async def get_current_user(
         return user
     except Exception as e:
         print(f"[AUTH] ❌ Error getting user: {e}")
+        import traceback
+        traceback.print_exc()
         raise InvalidTokenHTTPError
