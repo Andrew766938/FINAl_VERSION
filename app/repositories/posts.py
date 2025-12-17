@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from app.models.posts import PostModel
 from app.schemes.posts import PostCreate, PostUpdate
 
@@ -16,18 +17,24 @@ class PostRepository:
         )
         self.session.add(db_post)
         await self.session.commit()
-        await self.session.refresh(db_post)
+        await self.session.refresh(db_post, ["user"])
         return db_post
 
     async def get_post_by_id(self, post_id: int) -> PostModel | None:
         result = await self.session.execute(
-            select(PostModel).where(PostModel.id == post_id)
+            select(PostModel)
+            .where(PostModel.id == post_id)
+            .options(selectinload(PostModel.user))
         )
         return result.scalar_one_or_none()
 
     async def get_all_posts(self, skip: int = 0, limit: int = 10) -> list[PostModel]:
         result = await self.session.execute(
-            select(PostModel).offset(skip).limit(limit).order_by(PostModel.created_at.desc())
+            select(PostModel)
+            .options(selectinload(PostModel.user))
+            .offset(skip)
+            .limit(limit)
+            .order_by(PostModel.created_at.desc())
         )
         return result.scalars().all()
 
@@ -35,6 +42,7 @@ class PostRepository:
         result = await self.session.execute(
             select(PostModel)
             .where(PostModel.user_id == user_id)
+            .options(selectinload(PostModel.user))
             .offset(skip)
             .limit(limit)
             .order_by(PostModel.created_at.desc())
@@ -52,7 +60,7 @@ class PostRepository:
             db_post.content = post_data.content
             
         await self.session.commit()
-        await self.session.refresh(db_post)
+        await self.session.refresh(db_post, ["user"])
         return db_post
 
     async def delete_post(self, post_id: int) -> bool:
@@ -69,7 +77,7 @@ class PostRepository:
         if db_post:
             db_post.likes_count += 1
             await self.session.commit()
-            await self.session.refresh(db_post)
+            await self.session.refresh(db_post, ["user"])
         return db_post
 
     async def decrement_likes(self, post_id: int) -> PostModel | None:
@@ -77,5 +85,5 @@ class PostRepository:
         if db_post and db_post.likes_count > 0:
             db_post.likes_count -= 1
             await self.session.commit()
-            await self.session.refresh(db_post)
+            await self.session.refresh(db_post, ["user"])
         return db_post
