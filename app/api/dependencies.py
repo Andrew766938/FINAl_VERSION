@@ -74,6 +74,18 @@ async def get_db():
 DBDep = Annotated[DBManager, Depends(get_db)]
 
 
+class UserModelSimple(BaseModel):
+    """Simple user model for direct database use"""
+    id: int
+    name: str
+    email: str
+    hashed_password: str
+    role_id: int
+    
+    class Config:
+        from_attributes = True
+
+
 async def get_current_user(
     db: DBDep,
     user_id: int = Depends(get_current_user_id),
@@ -81,12 +93,15 @@ async def get_current_user(
     """Get current authenticated user from database"""
     try:
         print(f"[AUTH] Getting user with ID: {user_id}")
-        user = await db.users.get_one_or_none(id=user_id)
+        # Get raw user object from database
+        user = await db.users.session.get(UserModel, user_id)
         if not user:
             print(f"[AUTH] ❌ User not found with ID: {user_id}")
             raise InvalidTokenHTTPError
         print(f"[AUTH] ✅ User found: {user.email}")
         return user
+    except InvalidTokenHTTPError:
+        raise
     except Exception as e:
         print(f"[AUTH] ❌ Error getting user: {e}")
         import traceback
