@@ -5,6 +5,7 @@ import asyncio
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
 
 from app.config import settings
 from app.database.db_manager import DBManager
@@ -14,6 +15,7 @@ from app.services.posts import PostService
 from app.services.likes import LikeService
 from app.services.comments import CommentService
 from app.services.friendships import FriendshipService
+from app.models.users import UserModel
 from app.schemes.posts import PostCreate
 from app.schemes.comments import CommentCreate
 
@@ -30,13 +32,17 @@ async def init_sample_data():
     """
     try:
         async with DBManager(session_factory=async_session_maker) as db:
-            # Check if data already exists
-            existing_users = await db.users.get_all()
-            if existing_users and len(existing_users) > 0:
-                print("[INIT] Sample data already exists, skipping initialization")
+            # Check if alice@betony.local exists (the most reliable check)
+            result = await db.session.execute(
+                select(UserModel).where(UserModel.email == "alice@betony.local")
+            )
+            existing_alice = result.scalars().first()
+            
+            if existing_alice:
+                print("[INIT] ✅ Sample data already exists (alice@betony.local found), skipping initialization")
                 return
             
-            print("[INIT] Starting sample data initialization...")
+            print("[INIT] 🚀 Starting sample data initialization...")
             
             # Create sample users
             auth_service = AuthService(db)
@@ -52,18 +58,21 @@ async def init_sample_data():
             users = []
             for user_data in users_data:
                 try:
-                    user, _ = await auth_service.register_and_login(
+                    print(f"[INIT] 👤 Creating user: {user_data['name']} ({user_data['email']})")
+                    user, token = await auth_service.register_and_login(
                         email=user_data["email"],
                         password=user_data["password"],
                         name=user_data["name"]
                     )
                     users.append(user)
-                    print(f"[INIT] Created user: {user.name} ({user.email})")
+                    print(f"[INIT] ✅ User created successfully: {user.name} (ID: {user.id})")
                 except Exception as e:
-                    print(f"[INIT] Error creating user {user_data['name']}: {e}")
+                    print(f"[INIT] ❌ Error creating user {user_data['name']}: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             if not users:
-                print("[INIT] No users created, aborting data initialization")
+                print("[INIT] ❌ No users created, aborting data initialization")
                 return
             
             # Create sample posts
@@ -110,9 +119,9 @@ async def init_sample_data():
                     )
                     post = await posts_service.create_post(post_create, post_data["user_id"])
                     posts.append(post)
-                    print(f"[INIT] Created post: {post.title} by {users[0].name if post.user_id == users[0].id else 'User'}")
+                    print(f"[INIT] ✅ Created post: {post.title}")
                 except Exception as e:
-                    print(f"[INIT] Error creating post {post_data['title']}: {e}")
+                    print(f"[INIT] ❌ Error creating post {post_data['title']}: {e}")
             
             if not posts:
                 print("[INIT] No posts created")
@@ -138,9 +147,8 @@ async def init_sample_data():
             for post_id, user_id in like_pairs:
                 try:
                     like = await likes_service.create_like(post_id, user_id)
-                    print(f"[INIT] Created like: user {user_id} liked post {post_id}")
                 except Exception as e:
-                    print(f"[INIT] Error creating like: {e}")
+                    print(f"[INIT] ❌ Error creating like: {e}")
             
             # Create sample comments
             comments_service = CommentService(db)
@@ -190,9 +198,8 @@ async def init_sample_data():
                         comment_create,
                         comment_data["user_id"]
                     )
-                    print(f"[INIT] Created comment: on post {comment_data['post_id']}")
                 except Exception as e:
-                    print(f"[INIT] Error creating comment: {e}")
+                    print(f"[INIT] ❌ Error creating comment: {e}")
             
             # Create sample friendships
             friendship_service = FriendshipService(db)
@@ -207,21 +214,22 @@ async def init_sample_data():
             
             for user_id_1, user_id_2 in friendships_data:
                 try:
-                    # Bidirectional friendship
                     await friendship_service.add_friend(user_id_1, user_id_2)
                     await friendship_service.add_friend(user_id_2, user_id_1)
-                    print(f"[INIT] Created friendship: user {user_id_1} <-> user {user_id_2}")
                 except Exception as e:
-                    print(f"[INIT] Error creating friendship: {e}")
+                    print(f"[INIT] ❌ Error creating friendship: {e}")
             
-            print("[INIT] Sample data initialization completed successfully!")
+            print(f"\n[INIT] ✅ Sample data initialization completed successfully!")
             print(f"[INIT] Created {len(users)} users")
             print(f"[INIT] Created {len(posts)} posts")
             print(f"[INIT] Created {len(like_pairs)} likes")
             print(f"[INIT] Created {len(comments_data)} comments")
             print(f"[INIT] Created {len(friendships_data)} friendships")
+            print(f"\n[INIT] 📌 Test credentials:")
+            print(f"[INIT] Email: alice@betony.local")
+            print(f"[INIT] Password: password123")
             
     except Exception as e:
-        print(f"[INIT] Error initializing sample data: {e}")
+        print(f"[INIT] ❌ Error initializing sample data: {e}")
         import traceback
         traceback.print_exc()
