@@ -172,6 +172,11 @@
       box-shadow: 0 10px 25px rgba(147, 51, 234, 0.4);
     }
     
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
     .btn-small {
       padding: 8px 16px;
       font-size: 0.9rem;
@@ -216,6 +221,16 @@
       background: rgba(16, 185, 129, 0.1);
       border-radius: 6px;
       border-left: 3px solid var(--success);
+    }
+    
+    .form-loading {
+      color: #3b82f6;
+      font-size: 0.9rem;
+      margin-top: 5px;
+      padding: 10px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 6px;
+      border-left: 3px solid #3b82f6;
     }
     
     /* ===== MAIN APP ===== */
@@ -486,37 +501,36 @@
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" required>
+            <input type="email" id="loginEmail" required placeholder="user@example.com">
           </div>
           <div class="form-group">
             <label for="loginPassword">Пароль</label>
-            <input type="password" id="loginPassword" required>
+            <input type="password" id="loginPassword" required placeholder="Ваш пароль">
           </div>
-          <div id="loginError" class="form-error" style="display: none;"></div>
-          <button type="submit" class="btn btn-primary">Войти</button>
+          <div id="loginStatus" style="display: none;"></div>
+          <button type="submit" class="btn btn-primary" id="loginBtn">Войти</button>
         </form>
         
         <!-- REGISTER FORM -->
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label for="regUsername">Имя пользователя</label>
-            <input type="text" id="regUsername" required>
+            <input type="text" id="regUsername" required placeholder="Ваше имя">
           </div>
           <div class="form-group">
             <label for="regEmail">Email</label>
-            <input type="email" id="regEmail" required>
+            <input type="email" id="regEmail" required placeholder="user@example.com">
           </div>
           <div class="form-group">
             <label for="regPassword">Пароль</label>
-            <input type="password" id="regPassword" required>
+            <input type="password" id="regPassword" required placeholder="Ваш пароль">
           </div>
           <div class="form-group">
             <label for="regPasswordConfirm">Подтвердите пароль</label>
-            <input type="password" id="regPasswordConfirm" required>
+            <input type="password" id="regPasswordConfirm" required placeholder="Повторите пароль">
           </div>
-          <div id="regError" class="form-error" style="display: none;"></div>
-          <div id="regSuccess" class="form-success" style="display: none;"></div>
-          <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+          <div id="regStatus" style="display: none;"></div>
+          <button type="submit" class="btn btn-primary" id="regBtn">Зарегистрироваться</button>
         </form>
       </div>
     </div>
@@ -654,7 +668,7 @@
                   <h3>Мой опыт переезда в IT: Первые 100 дней 💼</h3>
                 </div>
               </div>
-              <p>Три месяца назад я решила кардинально изменить свою жизнь и перейти в IT. Это было одно из лучших решений в моей пожилой!</p>
+              <p>Три месяца назад я решила кардинально изменить свою жизнь и перейти в IT. Это было одно из лучших решений в моей карьере!</p>
               <div class="post-stats">
                 <span>❤️ Лайков: 412</span>
                 <span>💬 Комментариев: 67</span>
@@ -707,89 +721,134 @@
     function switchAuthTab(tab) {
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-      document.getElementById('loginError').style.display = 'none';
-      document.getElementById('regError').style.display = 'none';
-      document.getElementById('regSuccess').style.display = 'none';
+      document.getElementById('loginStatus').style.display = 'none';
+      document.getElementById('regStatus').style.display = 'none';
       
       event.target.classList.add('active');
       document.getElementById(tab === 'login' ? 'loginForm' : 'registerForm').classList.add('active');
     }
     
+    function showStatus(elementId, message, type) {
+      const element = document.getElementById(elementId);
+      element.className = type === 'error' ? 'form-error' : type === 'success' ? 'form-success' : 'form-loading';
+      element.textContent = message;
+      element.style.display = 'block';
+    }
+    
     async function handleLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
+      const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
-      const errorDiv = document.getElementById('loginError');
+      const loginBtn = document.getElementById('loginBtn');
+      
+      if (!email || !password) {
+        showStatus('loginStatus', '❌ Заполните все поля', 'error');
+        return;
+      }
+      
+      loginBtn.disabled = true;
+      showStatus('loginStatus', '⏳ Входим...', 'loading');
       
       try {
-        console.log('[CLIENT] Login:', email);
-        const response = await fetch(`${API_URL}/auth/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+        console.log('[CLIENT] Login attempt:', email);
+        
+        // ИСПРАВЛЕНО: Отправляем JSON в Body, не в query параметрах
+        const response = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password
+          })
         });
         
         const data = await response.json();
-        console.log('[CLIENT] Response:', response.status, data);
+        console.log('[CLIENT] Response status:', response.status);
+        console.log('[CLIENT] Response data:', data);
         
         if (response.ok && data.access_token) {
           authToken = data.access_token;
-          currentUser = data.user;
-          console.log('[CLIENT] Login OK');
-          showApp();
+          currentUser = data.user || { username: email.split('@')[0] };
+          console.log('[CLIENT] ✅ Login successful');
+          showStatus('loginStatus', '✅ Успешный вход!', 'success');
+          setTimeout(showApp, 800);
         } else {
-          errorDiv.textContent = data.error || 'Ошибка входа';
-          errorDiv.style.display = 'block';
+          const errorMsg = data.detail || data.error || 'Неверный email или пароль';
+          console.error('[CLIENT] Login failed:', errorMsg);
+          showStatus('loginStatus', '❌ ' + errorMsg, 'error');
         }
       } catch (error) {
         console.error('[CLIENT] Error:', error);
-        errorDiv.textContent = 'Ошибка: ' + error.message;
-        errorDiv.style.display = 'block';
+        showStatus('loginStatus', '❌ Ошибка соединения: ' + error.message, 'error');
+      } finally {
+        loginBtn.disabled = false;
       }
     }
     
     async function handleRegister(e) {
       e.preventDefault();
-      const username = document.getElementById('regUsername').value;
-      const email = document.getElementById('regEmail').value;
+      const username = document.getElementById('regUsername').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
       const passwordConfirm = document.getElementById('regPasswordConfirm').value;
-      const errorDiv = document.getElementById('regError');
-      const successDiv = document.getElementById('regSuccess');
+      const regBtn = document.getElementById('regBtn');
       
-      errorDiv.style.display = 'none';
-      successDiv.style.display = 'none';
-      
-      if (password !== passwordConfirm) {
-        errorDiv.textContent = 'Пароли не совпадают';
-        errorDiv.style.display = 'block';
+      if (!username || !email || !password || !passwordConfirm) {
+        showStatus('regStatus', '❌ Заполните все поля', 'error');
         return;
       }
       
+      if (password !== passwordConfirm) {
+        showStatus('regStatus', '❌ Пароли не совпадают', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showStatus('regStatus', '❌ Пароль должен быть не менее 6 символов', 'error');
+        return;
+      }
+      
+      regBtn.disabled = true;
+      showStatus('regStatus', '⏳ Регистрируемся...', 'loading');
+      
       try {
-        console.log('[CLIENT] Register:', email);
-        const response = await fetch(`${API_URL}/auth/register?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}&name=${encodeURIComponent(username)}`, {
+        console.log('[CLIENT] Register attempt:', email);
+        
+        // ИСПРАВЛЕНО: Отправляем JSON в Body
+        const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            name: username
+          })
         });
         
         const data = await response.json();
-        console.log('[CLIENT] Response:', response.status, data);
+        console.log('[CLIENT] Response status:', response.status);
+        console.log('[CLIENT] Response data:', data);
         
         if (response.ok && data.access_token) {
           authToken = data.access_token;
-          currentUser = data.user;
-          console.log('[CLIENT] Register OK');
-          successDiv.textContent = '✅ Зарегистрирован! Входим...';
-          successDiv.style.display = 'block';
-          setTimeout(showApp, 1500);
+          currentUser = data.user || { username: username };
+          console.log('[CLIENT] ✅ Register successful');
+          showStatus('regStatus', '✅ Регистрация успешна! Входим...', 'success');
+          setTimeout(showApp, 1200);
         } else {
-          errorDiv.textContent = data.error || 'Ошибка регистрации';
-          errorDiv.style.display = 'block';
+          const errorMsg = data.detail || data.error || 'Ошибка регистрации';
+          console.error('[CLIENT] Register failed:', errorMsg);
+          showStatus('regStatus', '❌ ' + errorMsg, 'error');
         }
       } catch (error) {
         console.error('[CLIENT] Error:', error);
-        errorDiv.textContent = 'Ошибка: ' + error.message;
-        errorDiv.style.display = 'block';
+        showStatus('regStatus', '❌ Ошибка соединения: ' + error.message, 'error');
+      } finally {
+        regBtn.disabled = false;
       }
     }
     
@@ -797,7 +856,7 @@
       document.getElementById('authScreen').style.display = 'none';
       document.getElementById('appScreen').classList.add('active');
       
-      const username = currentUser.username || 'User';
+      const username = currentUser.username || currentUser.name || 'User';
       const initials = username.substring(0, 2).toUpperCase();
       document.getElementById('currentUserName').textContent = username;
       document.getElementById('userAvatar').textContent = initials;
@@ -810,6 +869,8 @@
       document.getElementById('authScreen').style.display = 'flex';
       document.getElementById('loginForm').reset();
       document.getElementById('registerForm').reset();
+      document.getElementById('loginStatus').style.display = 'none';
+      document.getElementById('regStatus').style.display = 'none';
     }
     
     function switchTab(e, tab) {
