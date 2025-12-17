@@ -10,8 +10,11 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from app.api.auth import router as auth_router
 from app.api.posts import router as posts_router
 from app.api.friendships import router as friendships_router
+from app.api.comments import router as comments_router
+from app.api.likes import router as likes_router
 from app.config import settings
 from app.database.database import Base
+from app.services.data_init import init_sample_data
 
 app = FastAPI(title="Betony", version="1.0.0")
 
@@ -46,16 +49,23 @@ async def health():
 
 @app.on_event("startup")
 async def startup_event():
-    """Create database tables on startup"""
+    """Create database tables and initialize sample data on startup"""
+    print("[APP] Starting application...")
     print("[APP] Creating database tables...")
     try:
         engine = create_async_engine(settings.get_db_url)
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         print("[APP] Database tables created successfully!")
+        
+        # Initialize sample data
+        print("[APP] Initializing sample data...")
+        await init_sample_data()
+        print("[APP] Sample data initialized successfully!")
+        
         await engine.dispose()
     except Exception as e:
-        print(f"[APP] Error creating tables: {e}")
+        print(f"[APP] Error during startup: {e}")
         import traceback
         traceback.print_exc()
 
@@ -63,6 +73,8 @@ async def startup_event():
 # Include routers
 app.include_router(auth_router)
 app.include_router(posts_router)
+app.include_router(comments_router)
+app.include_router(likes_router)
 app.include_router(friendships_router)
 
 
