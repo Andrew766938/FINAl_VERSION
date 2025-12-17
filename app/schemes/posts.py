@@ -18,9 +18,11 @@ class PostResponse(BaseModel):
     title: str
     content: str
     user_id: int
+    author_name: Optional[str] = None
+    author_email: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    likes_count: int
+    likes_count: int = 0
     
     class Config:
         from_attributes = True
