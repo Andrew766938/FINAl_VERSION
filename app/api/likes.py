@@ -8,6 +8,49 @@ from app.models.users import UserModel
 router = APIRouter(prefix="/likes", tags=["likes"])
 
 
+@router.post(
+    "/{post_id}",
+    response_model=dict,
+    status_code=status.HTTP_201_CREATED,
+)
+async def like_post(
+    post_id: int,
+    db: DBDep,
+    current_user: UserModel = Depends(get_current_user),
+):
+    """Like a post"""
+    try:
+        print(f"[API] User {current_user.id} liking post {post_id}")
+        service = LikeService(db)
+        
+        # Check if already liked
+        existing_like = await service.get_like_by_post_and_user(post_id, current_user.id)
+        if existing_like:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Already liked this post"
+            )
+        
+        like = await service.create_like(post_id, current_user.id)
+        await db.commit()
+        print(f"[API] Like created successfully with ID {like.id}")
+        return {
+            "id": like.id,
+            "post_id": like.post_id,
+            "user_id": like.user_id,
+            "created_at": like.created_at,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[API] Error liking post: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to like post"
+        )
+
+
 @router.get(
     "/{like_id}",
     response_model=dict,
