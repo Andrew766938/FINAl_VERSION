@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from starlette.responses import Response
 import traceback
 
@@ -8,31 +9,39 @@ from app.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Pydantic моделиы для валидации
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(
     db: DBDep,
-    email: str = Body(..., embed=True),
-    password: str = Body(..., embed=True),
-    name: str = Body(..., embed=True)
+    data: RegisterRequest
 ) -> dict:
     """
-    Simple registration endpoint with proper error handling
+    Registration endpoint - accepts JSON body
     """
     try:
         print(f"\n[API] Register endpoint called")
-        print(f"[API] Email: {email}, Name: {name}")
+        print(f"[API] Email: {data.email}, Name: {data.name}")
         
-        if not email or not password or not name:
+        if not data.email or not data.password or not data.name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email, password, and name are required"
             )
         
         service = AuthService(db)
-        user, token = await service.register_and_login(email, password, name)
+        user, token = await service.register_and_login(data.email, data.password, data.name)
         
-        print(f"[API] Registration successful, returning token")
+        print(f"[API] ✅ Registration successful")
         return {
             "access_token": token,
             "user": {
@@ -42,7 +51,7 @@ async def register_user(
             }
         }
     except ValueError as e:
-        print(f"[API] Validation error: {e}")
+        print(f"[API] ❌ Validation error: {e}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -50,11 +59,11 @@ async def register_user(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[API] Registration error: {e}")
+        print(f"[API] ❌ Registration error: {e}")
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed"
+            detail="Registration failed: " + str(e)
         )
 
 
@@ -62,26 +71,26 @@ async def register_user(
 async def login_user(
     db: DBDep,
     response: Response,
-    email: str = Body(..., embed=True),
-    password: str = Body(..., embed=True)
+    data: LoginRequest
 ) -> dict:
     """
-    Simple login endpoint with proper error handling
+    Login endpoint - accepts JSON body
+    Returns access_token in response
     """
     try:
         print(f"\n[API] Login endpoint called")
-        print(f"[API] Email: {email}")
+        print(f"[API] Email: {data.email}")
         
-        if not email or not password:
+        if not data.email or not data.password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email and password are required"
             )
         
         service = AuthService(db)
-        user, token = await service.login(email, password)
+        user, token = await service.login(data.email, data.password)
         
-        print(f"[API] Login successful")
+        print(f"[API] ✅ Login successful for user: {user.email}")
         response.set_cookie("access_token", token, httponly=True)
         return {
             "access_token": token,
@@ -92,7 +101,7 @@ async def login_user(
             }
         }
     except ValueError as e:
-        print(f"[API] Validation error: {e}")
+        print(f"[API] ❌ Validation error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)
@@ -100,22 +109,29 @@ async def login_user(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[API] Login error: {e}")
+        print(f"[API] ❌ Login error: {e}")
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login failed"
+            detail="Login failed: " + str(e)
         )
 
 
 @router.get("/me")
 async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user)) -> dict:
     """Get current authenticated user"""
-    return {
-        "id": current_user.id,
-        "username": current_user.name,
-        "email": current_user.email,
-    }
+    try:
+        return {
+            "id": current_user.id,
+            "username": current_user.name,
+            "email": current_user.email,
+        }
+    except Exception as e:
+        print(f"[API] ❌ Get me error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get current user"
+        )
 
 
 @router.get("/users/{user_id}")
@@ -137,7 +153,7 @@ async def get_user(db: DBDep, user_id: int) -> dict:
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[API] Get user error: {e}")
+        print(f"[API] ❌ Get user error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get user"
@@ -159,7 +175,7 @@ async def get_all_users(db: DBDep) -> list:
             for user in (users or [])
         ]
     except Exception as e:
-        print(f"[API] Get users error: {e}")
+        print(f"[API] ❌ Get users error: {e}")
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -170,5 +186,12 @@ async def get_all_users(db: DBDep) -> list:
 @router.post("/logout")
 async def logout(response: Response) -> dict:
     """Logout and clear authentication cookie"""
-    response.delete_cookie("access_token")
-    return {"status": "OK"}
+    try:
+        response.delete_cookie("access_token")
+        return {"status": "OK", "message": "Logged out successfully"}
+    except Exception as e:
+        print(f"[API] ❌ Logout error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Logout failed"
+        )
