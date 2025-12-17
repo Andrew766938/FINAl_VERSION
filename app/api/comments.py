@@ -9,6 +9,42 @@ from app.models.users import UserModel
 router = APIRouter(prefix="/comments", tags=["comments"])
 
 
+@router.post(
+    "/{post_id}",
+    response_model=dict,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_comment(
+    post_id: int,
+    comment_data: CommentCreate,
+    db: DBDep,
+    current_user: UserModel = Depends(get_current_user),
+):
+    """Create a comment on a post"""
+    try:
+        print(f"[API] Creating comment on post {post_id} by user {current_user.id}")
+        service = CommentService(db)
+        comment = await service.create_comment(post_id, comment_data, current_user.id)
+        await db.commit()
+        print(f"[API] Comment created successfully with ID {comment.id}")
+        return {
+            "id": comment.id,
+            "post_id": comment.post_id,
+            "user_id": comment.user_id,
+            "content": comment.content,
+            "created_at": comment.created_at,
+            "author_name": current_user.name,
+            "author_email": current_user.email,
+        }
+    except Exception as e:
+        print(f"[API] Error creating comment: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create comment"
+        )
+
+
 @router.get(
     "/{comment_id}",
     response_model=dict,
