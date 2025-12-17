@@ -25,6 +25,19 @@ class LikeRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_like_by_id(self, like_id: int) -> LikeModel | None:
+        """Get a like by its ID"""
+        return await self.session.get(LikeModel, like_id)
+
+    async def get_like_by_post_and_user(self, post_id: int, user_id: int) -> LikeModel | None:
+        """Get a like by post and user (same as get_like but with different parameter order)"""
+        result = await self.session.execute(
+            select(LikeModel)
+            .where(LikeModel.user_id == user_id)
+            .where(LikeModel.post_id == post_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_post_likes(self, post_id: int) -> list[LikeModel]:
         result = await self.session.execute(
             select(LikeModel).where(LikeModel.post_id == post_id)
