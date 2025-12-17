@@ -182,7 +182,7 @@
       width: 100%;
     }
     
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       transform: translateY(-2px);
       box-shadow: 0 10px 25px rgba(147, 51, 234, 0.4);
     }
@@ -209,7 +209,7 @@
       border: 1px solid rgba(168, 85, 247, 0.3);
     }
     
-    .btn-secondary:hover {
+    .btn-secondary:hover:not(:disabled) {
       background: rgba(168, 85, 247, 0.25);
     }
     
@@ -659,7 +659,7 @@
                 <label for="postContent">Содержание</label>
                 <textarea id="postContent" required placeholder="Поделитесь своими мыслями..." rows="5"></textarea>
               </div>
-              <button type="submit" class="btn btn-primary" id="createPostBtn">Опубликовать</button>
+              <button type="submit" class="btn btn-primary" id="createPostBtn">📝 Опубликовать</button>
             </form>
           </div>
           
@@ -704,12 +704,17 @@
         headers['Authorization'] = `Bearer ${authToken}`;
       }
       
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers
-      });
-      
-      return response;
+      try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          ...options,
+          headers
+        });
+        console.log(`[API] ${options.method || 'GET'} ${endpoint} - Status: ${response.status}`);
+        return response;
+      } catch (error) {
+        console.error(`[API] Error on ${endpoint}:`, error);
+        throw error;
+      }
     }
     
     function switchAuthTab(tab) {
@@ -746,13 +751,12 @@
       try {
         const response = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ email, password })
         });
         
         const data = await response.json();
+        console.log('[AUTH] Login response:', {status: response.status, has_token: !!data.access_token});
         
         if (response.ok && data.access_token) {
           authToken = data.access_token;
@@ -764,6 +768,7 @@
           showStatus('loginStatus', '❌ ' + errorMsg, 'error');
         }
       } catch (error) {
+        console.error('[AUTH] Login error:', error);
         showStatus('loginStatus', '❌ Ошибка соединения', 'error');
       } finally {
         loginBtn.disabled = false;
@@ -799,9 +804,7 @@
       try {
         const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ email, password, name: username })
         });
         
@@ -817,6 +820,7 @@
           showStatus('regStatus', '❌ ' + errorMsg, 'error');
         }
       } catch (error) {
+        console.error('[AUTH] Register error:', error);
         showStatus('regStatus', '❌ Ошибка соединения', 'error');
       } finally {
         regBtn.disabled = false;
@@ -875,6 +879,7 @@
 
     async function loadPosts() {
       try {
+        console.log('[POSTS] Loading posts...');
         const res = await apiCall('/posts/');
         const data = await res.json();
         const container = document.getElementById('postsContainer');
@@ -895,28 +900,36 @@
           const authorEmail = post.author_email || post.user?.email || 'user';
           el.innerHTML = `
             <div class="post-header">
-              <div>
+              <div style="flex: 1;">
                 <div class="post-author">
                   ${createUserAvatar(authorName).outerHTML}
                   <div>
                     <div style="font-weight: 600; color: var(--text-white);">${authorName}</div>
-                    <div class="post-meta">@${authorEmail} • ID: ${post.id}</div>
+                    <div class="post-meta">@${authorEmail}</div>
                   </div>
                 </div>
                 <h3>${post.title}</h3>
               </div>
             </div>
             <p>${post.content}</p>
+            <div class="post-stats">
+              <span>♥️ Лайков: ${post.likes_count || 0}</span>
+            </div>
+            <div class="post-actions">
+              <button class="btn btn-small btn-secondary" onclick="likePost(${post.id})">❤️ Лайк</button>
+              <button class="btn btn-small btn-secondary" onclick="commentPost(${post.id})">💬 Комментарий</button>
+            </div>
           `;
           container.appendChild(el);
         });
       } catch (e) {
-        console.error('[CLIENT] loadPosts error', e);
+        console.error('[POSTS] Error loading posts:', e);
       }
     }
 
     async function loadUsers() {
       try {
+        console.log('[USERS] Loading users...');
         const res = await apiCall('/auth/users');
         const data = await res.json();
         const container = document.getElementById('usersContainer');
@@ -953,7 +966,6 @@
 
           const friendBtn = document.createElement('button');
           friendBtn.className = 'btn btn-small btn-secondary';
-          friendBtn.textContent = '❤️ Добавить';
           friendBtn.type = 'button';
           
           const isAlreadyFriend = friendshipsCache.some(f => f.user_id === currentUser.id && f.friend_id === user.id);
@@ -968,7 +980,13 @@
             friendBtn.style.opacity = '0.6';
             friendBtn.style.cursor = 'default';
           } else {
-            friendBtn.onclick = async () => await addFriend(user.id, friendBtn);
+            friendBtn.textContent = '❤️ Добавить';
+            friendBtn.onclick = async () => {
+              friendBtn.disabled = true;
+              console.log('[FRIENDS] Adding friend:', user.id);
+              await addFriend(user.id);
+              friendBtn.disabled = false;
+            };
           }
 
           actions.appendChild(friendBtn);
@@ -979,39 +997,48 @@
           container.appendChild(card);
         });
       } catch (e) {
-        console.error('[CLIENT] loadUsers error', e);
+        console.error('[USERS] Error loading users:', e);
       }
     }
 
     async function loadFriendships() {
       try {
+        console.log('[FRIENDSHIPS] Loading friendships...');
         const res = await apiCall('/friendships/');
-        if (!res.ok) return;
+        if (!res.ok) {
+          console.error('[FRIENDSHIPS] Failed to load:', res.status);
+          return;
+        }
         const data = await res.json();
+        console.log('[FRIENDSHIPS] Loaded:', data.length, 'friendships');
         friendshipsCache = data;
         renderFriends();
       } catch (e) {
-        console.error('[CLIENT] loadFriendships error', e);
+        console.error('[FRIENDSHIPS] Error loading friendships:', e);
       }
     }
 
-    async function addFriend(friendId, buttonElement) {
+    async function addFriend(friendId) {
       try {
+        console.log('[FRIENDS] Attempting to add friend:', friendId);
         const res = await apiCall(`/friendships/${friendId}`, {
           method: 'POST',
           body: JSON.stringify({})
         });
         
+        const data = await res.json();
+        console.log('[FRIENDS] Response:', {status: res.status, data});
+        
         if (res.ok) {
+          console.log('[FRIENDS] Successfully added friend');
           await loadFriendships();
           await loadUsers();
           alert('✅ Друг добавлен!');
         } else {
-          const error = await res.json();
-          alert('❌ ' + (error.detail || 'Ошибка'));
+          alert('❌ ' + (data.detail || 'Ошибка'));
         }
       } catch (e) {
-        console.error('[CLIENT] addFriend error', e);
+        console.error('[FRIENDS] Error:', e);
         alert('❌ Ошибка: ' + e.message);
       }
     }
@@ -1077,9 +1104,9 @@
       const meta = document.createElement('div');
       meta.className = 'profile-meta';
       meta.innerHTML = `
-        <div><span class="profile-label">Имя:</span> ${currentUser.username || 'Не указано'}</div>
+        <div><span class="profile-label">Имя:</span> ${currentUser.username || currentUser.name || 'Не указано'}</div>
         <div><span class="profile-label">Email:</span> ${currentUser.email || 'Не указано'}</div>
-        <div><span class="profile-label">ID пользователя:</span> ${currentUser.id || '—'}</div>
+        <div><span class="profile-label">ID:</span> ${currentUser.id || '—'}</div>
       `;
 
       card.appendChild(meta);
@@ -1098,31 +1125,42 @@
       }
       
       createBtn.disabled = true;
+      console.log('[POST] Creating post:', {title, content, token: authToken ? 'EXISTS' : 'MISSING'});
       
       try {
-        console.log('[CLIENT] Creating post with title:', title);
         const response = await apiCall('/posts/', {
           method: 'POST',
           body: JSON.stringify({ title, content })
         });
         
         const data = await response.json();
-        console.log('[CLIENT] Response status:', response.status);
-        console.log('[CLIENT] Response:', data);
+        console.log('[POST] Create response:', {status: response.status, id: data.id, error: data.detail});
         
         if (response.ok) {
-          alert('✅ Пост успешно создан!');
+          alert('✅ Пост создан!');
           document.getElementById('createPostForm').reset();
           await loadPosts();
         } else {
-          alert('❌ Ошибка: ' + (data.detail || 'Не удалось создать пост'));
+          const msg = data.detail || data.error || 'Неожиданная ошибка';
+          alert('❌ Ошибка: ' + msg);
+          console.log('[POST] Error details:', data);
         }
       } catch (error) {
-        console.error('[CLIENT] Error:', error);
+        console.error('[POST] Exception:', error);
         alert('❌ Ошибка: ' + error.message);
       } finally {
         createBtn.disabled = false;
       }
+    }
+
+    function likePost(postId) {
+      console.log('[LIKE] Liked post:', postId);
+      alert('👍 Лайк добавлен! (Функция в разработке)');
+    }
+
+    function commentPost(postId) {
+      console.log('[COMMENT] Commenting on post:', postId);
+      alert('💬 Комментарий! (Функция в разработке)');
     }
   </script>
 </body>
