@@ -70,6 +70,7 @@ class SUserPatch(BaseModel):
     email: str | None = None  # Changed from EmailStr to str
     hashed_password: str | None = None
     role_id: int | None = None
+        is_admin: bool | None = None
 
     @field_validator('email')
     @classmethod
