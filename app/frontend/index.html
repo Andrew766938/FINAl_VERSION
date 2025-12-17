@@ -469,6 +469,75 @@
       flex-wrap: wrap;
     }
     
+    .users-list,
+    .friends-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(15, 52, 96, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .user-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: var(--text-white);
+    }
+
+    .user-email {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .user-actions button {
+      margin-left: 8px;
+    }
+
+    .profile-card {
+      background: rgba(15, 52, 96, 0.85);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .profile-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .profile-meta div {
+      font-size: 0.95rem;
+    }
+
+    .profile-label {
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    
     .empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -594,61 +663,25 @@
             </form>
           </div>
           
-          <div id="postsContainer" class="posts-grid">
-            <!-- SAMPLE POSTS -->
-            <div class="post">
-              <div class="post-header">
-                <div>
-                  <div class="post-author">
-                    <div class="post-avatar">АА</div>
-                    <div>
-                      <div style="font-weight: 600; color: var(--text-white);">Александр Андреев</div>
-                      <div class="post-meta">@alexander • 2 часа назад</div>
-                    </div>
-                  </div>
-                  <h3>Как начать путешествие в веб-разработку 🚀</h3>
-                </div>
-              </div>
-              <p>Я хотел бы поделиться своим опытом начала работы в веб-разработке. За последние 3 года я прошёл путь от новичка до профессионального разработчика!</p>
-              <div class="post-stats">
-                <span>❤️ Лайков: 127</span>
-                <span>💬 Комментариев: 24</span>
-                <span>👁️ Просмотров: 1.2K</span>
-              </div>
-              <div class="post-actions">
-                <button class="btn btn-small btn-secondary">❤️ Лайк</button>
-                <button class="btn btn-small btn-secondary">💬 Ответить</button>
-                <button class="btn btn-small btn-secondary">📤 Поделиться</button>
-              </div>
-            </div>
-          </div>
+          <div id="postsContainer" class="posts-grid"></div>
         </div>
         
         <!-- USERS TAB -->
         <div id="usersTab" class="tabs-content">
-          <h2 style="margin-bottom: 30px; color: var(--text-white);">👫 Люди</h2>
-          <div class="empty-state">
-            <div class="empty-state-icon">👋</div>
-            <p>Вкладка в разработке...</p>
-          </div>
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">👫 Люди</h2>
+          <div id="usersContainer" class="users-list"></div>
         </div>
         
         <!-- FRIENDS TAB -->
         <div id="friendsTab" class="tabs-content">
-          <h2 style="margin-bottom: 30px; color: var(--text-white);">❤️ Друзья</h2>
-          <div class="empty-state">
-            <div class="empty-state-icon">👬</div>
-            <p>Вкладка в разработке...</p>
-          </div>
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">❤️ Друзья</h2>
+          <div id="friendsContainer" class="friends-list"></div>
         </div>
         
         <!-- PROFILE TAB -->
         <div id="profileTab" class="tabs-content">
-          <h2 style="margin-bottom: 30px; color: var(--text-white);">👤 Профиль</h2>
-          <div class="empty-state">
-            <div class="empty-state-icon">👨‍💼</div>
-            <p>Вкладка в разработке...</p>
-          </div>
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">👤 Профиль</h2>
+          <div id="profileContainer"></div>
         </div>
       </main>
     </div>
@@ -658,8 +691,9 @@
     const API_URL = 'http://localhost:8000';
     let currentUser = null;
     let authToken = null;
-    
-    // ✅ ФУНКЦИЯ ДЛЯ ОТПРАВКИ ЗАПРОсОВ С ТОКЕНОМ
+    let allUsersCache = [];
+    let friendshipsCache = [];
+
     async function apiCall(endpoint, options = {}) {
       const headers = {
         'Content-Type': 'application/json',
@@ -710,36 +744,26 @@
       showStatus('loginStatus', '⏳ Входим...', 'loading');
       
       try {
-        console.log('[CLIENT] Login attempt:', email);
-        
         const response = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            email: email,
-            password: password
-          })
+          body: JSON.stringify({ email, password })
         });
         
         const data = await response.json();
-        console.log('[CLIENT] Response status:', response.status);
-        console.log('[CLIENT] Response data:', data);
         
         if (response.ok && data.access_token) {
           authToken = data.access_token;
           currentUser = data.user || { username: email.split('@')[0] };
-          console.log('[CLIENT] ✅ Login successful');
           showStatus('loginStatus', '✅ Успешный вход!', 'success');
-          setTimeout(showApp, 800);
+          setTimeout(showApp, 500);
         } else {
           const errorMsg = data.detail || data.error || 'Неверный email или пароль';
-          console.error('[CLIENT] Login failed:', errorMsg);
           showStatus('loginStatus', '❌ ' + errorMsg, 'error');
         }
       } catch (error) {
-        console.error('[CLIENT] Error:', error);
         showStatus('loginStatus', '❌ Ошибка соединения', 'error');
       } finally {
         loginBtn.disabled = false;
@@ -773,18 +797,12 @@
       showStatus('regStatus', '⏳ Регистрируемся...', 'loading');
       
       try {
-        console.log('[CLIENT] Register attempt:', email);
-        
         const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-            name: username
-          })
+          body: JSON.stringify({ email, password, name: username })
         });
         
         const data = await response.json();
@@ -792,23 +810,20 @@
         if (response.ok && data.access_token) {
           authToken = data.access_token;
           currentUser = data.user || { username: username };
-          console.log('[CLIENT] ✅ Register successful');
           showStatus('regStatus', '✅ Регистрация успешна!', 'success');
-          setTimeout(showApp, 1200);
+          setTimeout(showApp, 500);
         } else {
           const errorMsg = data.detail || data.error || 'Ошибка регистрации';
-          console.error('[CLIENT] Register failed:', errorMsg);
           showStatus('regStatus', '❌ ' + errorMsg, 'error');
         }
       } catch (error) {
-        console.error('[CLIENT] Error:', error);
         showStatus('regStatus', '❌ Ошибка соединения', 'error');
       } finally {
         regBtn.disabled = false;
       }
     }
     
-    function showApp() {
+    async function showApp() {
       document.getElementById('authScreen').style.display = 'none';
       document.getElementById('appScreen').classList.add('active');
       
@@ -816,6 +831,13 @@
       const initials = username.substring(0, 2).toUpperCase();
       document.getElementById('currentUserName').textContent = username;
       document.getElementById('userAvatar').textContent = initials;
+
+      await Promise.all([
+        loadPosts(),
+        loadUsers(),
+        loadFriendships(),
+        renderProfile()
+      ]);
     }
     
     function logout() {
@@ -827,6 +849,12 @@
       document.getElementById('registerForm').reset();
       document.getElementById('loginStatus').style.display = 'none';
       document.getElementById('regStatus').style.display = 'none';
+      document.getElementById('postsContainer').innerHTML = '';
+      document.getElementById('usersContainer').innerHTML = '';
+      document.getElementById('friendsContainer').innerHTML = '';
+      document.getElementById('profileContainer').innerHTML = '';
+      allUsersCache = [];
+      friendshipsCache = [];
     }
     
     function switchTab(e, tab) {
@@ -836,7 +864,192 @@
       e.target.classList.add('active');
       document.getElementById(tab + 'Tab').classList.add('active');
     }
-    
+
+    function createUserAvatar(name) {
+      const initials = (name || '?').substring(0, 2).toUpperCase();
+      const span = document.createElement('div');
+      span.className = 'post-avatar';
+      span.textContent = initials;
+      return span;
+    }
+
+    async function loadPosts() {
+      try {
+        const res = await apiCall('/posts/');
+        const data = await res.json();
+        const container = document.getElementById('postsContainer');
+        container.innerHTML = '';
+
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.innerHTML = '<div class="empty-state-icon">📝</div><p>Пока нет постов. Создайте первый!</p>';
+          container.appendChild(empty);
+          return;
+        }
+
+        data.forEach(post => {
+          const el = document.createElement('div');
+          el.className = 'post';
+          el.innerHTML = `
+            <div class="post-header">
+              <div>
+                <div class="post-author">
+                  ${createUserAvatar(post.author_name || '??').outerHTML}
+                  <div>
+                    <div style="font-weight: 600; color: var(--text-white);">${post.author_name || 'Неизвестный автор'}</div>
+                    <div class="post-meta">@${post.author_email || 'user'} • ID: ${post.id}</div>
+                  </div>
+                </div>
+                <h3>${post.title}</h3>
+              </div>
+            </div>
+            <p>${post.content}</p>
+          `;
+          container.appendChild(el);
+        });
+      } catch (e) {
+        console.error('[CLIENT] loadPosts error', e);
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await apiCall('/auth/users');
+        const data = await res.json();
+        const container = document.getElementById('usersContainer');
+        container.innerHTML = '';
+
+        if (!res.ok || !Array.isArray(data) || data.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.innerHTML = '<div class="empty-state-icon">👥</div><p>Пользователей пока нет.</p>';
+          container.appendChild(empty);
+          return;
+        }
+
+        allUsersCache = data;
+
+        data.forEach(user => {
+          const card = document.createElement('div');
+          card.className = 'user-card';
+
+          const main = document.createElement('div');
+          main.className = 'user-main';
+          main.appendChild(createUserAvatar(user.username || user.email));
+
+          const meta = document.createElement('div');
+          meta.className = 'user-meta';
+          meta.innerHTML = `
+            <div class="user-name">${user.username || 'Без имени'}</div>
+            <div class="user-email">${user.email}</div>
+          `;
+          main.appendChild(meta);
+
+          const actions = document.createElement('div');
+          actions.className = 'user-actions';
+
+          const friendBtn = document.createElement('button');
+          friendBtn.className = 'btn btn-small btn-secondary';
+          friendBtn.textContent = 'Добавить в друзья';
+          friendBtn.onclick = () => alert('Логика добавления в друзья пока не реализована');
+
+          actions.appendChild(friendBtn);
+
+          card.appendChild(main);
+          card.appendChild(actions);
+
+          container.appendChild(card);
+        });
+
+        renderFriends();
+      } catch (e) {
+        console.error('[CLIENT] loadUsers error', e);
+      }
+    }
+
+    async function loadFriendships() {
+      try {
+        const res = await apiCall('/friendships/');
+        if (!res.ok) return;
+        const data = await res.json();
+        friendshipsCache = data;
+        renderFriends();
+      } catch (e) {
+        console.error('[CLIENT] loadFriendships error', e);
+      }
+    }
+
+    function renderFriends() {
+      const container = document.getElementById('friendsContainer');
+      container.innerHTML = '';
+      if (!currentUser || !allUsersCache.length || !friendshipsCache.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>Пока нет данных о друзьях.</p>';
+        container.appendChild(empty);
+        return;
+      }
+
+      const myId = currentUser.id;
+      const friendIds = friendshipsCache
+        .filter(f => f.user_id === myId)
+        .map(f => f.friend_id);
+
+      const myFriends = allUsersCache.filter(u => friendIds.includes(u.id));
+
+      if (!myFriends.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>У вас пока нет друзей. Добавьте кого‑нибудь во вкладке "Люди".</p>';
+        container.appendChild(empty);
+        return;
+      }
+
+      myFriends.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'user-card';
+
+        const main = document.createElement('div');
+        main.className = 'user-main';
+        main.appendChild(createUserAvatar(user.username || user.email));
+
+        const meta = document.createElement('div');
+        meta.className = 'user-meta';
+        meta.innerHTML = `
+          <div class="user-name">${user.username || 'Без имени'}</div>
+          <div class="user-email">${user.email}</div>
+        `;
+        main.appendChild(meta);
+
+        card.appendChild(main);
+        container.appendChild(card);
+      });
+    }
+
+    async function renderProfile() {
+      const container = document.getElementById('profileContainer');
+      container.innerHTML = '';
+      if (!currentUser) return;
+
+      const card = document.createElement('div');
+      card.className = 'profile-card';
+
+      const avatar = createUserAvatar(currentUser.username || currentUser.email);
+      card.appendChild(avatar);
+
+      const meta = document.createElement('div');
+      meta.className = 'profile-meta';
+      meta.innerHTML = `
+        <div><span class="profile-label">Имя:</span> ${currentUser.username || 'Не указано'}</div>
+        <div><span class="profile-label">Email:</span> ${currentUser.email || 'Не указано'}</div>
+        <div><span class="profile-label">ID пользователя:</span> ${currentUser.id || '—'}</div>
+      `;
+
+      card.appendChild(meta);
+      container.appendChild(card);
+    }
+
     async function handleCreatePost(e) {
       e.preventDefault();
       const title = document.getElementById('postTitle').value.trim();
@@ -850,16 +1063,14 @@
       try {
         const response = await apiCall('/posts/', {
           method: 'POST',
-          body: JSON.stringify({
-            title: title,
-            content: content
-          })
+          body: JSON.stringify({ title, content })
         });
         
         const data = await response.json();
         if (response.ok) {
           alert('✅ Пост успешно создан!');
           document.getElementById('createPostForm').reset();
+          await loadPosts();
         } else {
           alert('❌ Ошибка: ' + (data.detail || 'Не удалось создать пост'));
         }
