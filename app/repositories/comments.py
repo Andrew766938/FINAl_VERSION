@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 from app.models.comments import CommentModel
 from app.schemes.comments import CommentCreate, CommentUpdate
 
@@ -7,6 +8,7 @@ from app.schemes.comments import CommentCreate, CommentUpdate
 class CommentRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
+        
     async def create_comment(self, comment_data: CommentCreate, user_id: int, post_id: int) -> CommentModel:
         db_comment = CommentModel(
             content=comment_data.content,
@@ -14,13 +16,15 @@ class CommentRepository:
             post_id=post_id
         )
         self.session.add(db_comment)
-        await self.session.commit()
-        await self.session.refresh(db_comment)
+        await self.session.flush()
+        await self.session.refresh(db_comment, ["user"])
         return db_comment
 
     async def get_comment_by_id(self, comment_id: int) -> CommentModel | None:
         result = await self.session.execute(
-            select(CommentModel).where(CommentModel.id == comment_id)
+            select(CommentModel)
+            .where(CommentModel.id == comment_id)
+            .options(selectinload(CommentModel.user))
         )
         return result.scalar_one_or_none()
 
@@ -28,6 +32,7 @@ class CommentRepository:
         result = await self.session.execute(
             select(CommentModel)
             .where(CommentModel.post_id == post_id)
+            .options(selectinload(CommentModel.user))
             .offset(skip)
             .limit(limit)
             .order_by(CommentModel.created_at.desc())
@@ -38,6 +43,7 @@ class CommentRepository:
         result = await self.session.execute(
             select(CommentModel)
             .where(CommentModel.user_id == user_id)
+            .options(selectinload(CommentModel.user))
             .offset(skip)
             .limit(limit)
             .order_by(CommentModel.created_at.desc())
@@ -50,8 +56,8 @@ class CommentRepository:
             return None
         
         db_comment.content = comment_data.content
-        await self.session.commit()
-        await self.session.refresh(db_comment)
+        await self.session.flush()
+        await self.session.refresh(db_comment, ["user"])
         return db_comment
 
     async def delete_comment(self, comment_id: int) -> bool:
@@ -60,5 +66,5 @@ class CommentRepository:
             return False
         
         await self.session.delete(db_comment)
-        await self.session.commit()
+        await self.session.flush()
         return True
