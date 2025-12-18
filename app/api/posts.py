@@ -9,6 +9,7 @@ from app.services.likes import LikeService
 from app.schemes.posts import PostCreate, PostUpdate, PostResponse
 from app.schemes.comments import CommentCreate, CommentResponse
 from app.models.users import UserModel
+from app.exceptions.exceptions import PostNotFound, CommentNotFound, Forbidden
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -154,7 +155,6 @@ async def delete_post(
         print(f"\n[API] Delete post {post_id} by user {current_user.id}")
         print(f"[API] User is_admin: {current_user.is_admin}")
         service = PostService(db)
-        # Ensure is_admin is bool, not None
         is_admin = bool(current_user.is_admin) if current_user.is_admin is not None else False
         await service.delete_post(
             post_id=post_id,
@@ -163,6 +163,18 @@ async def delete_post(
         )
         print(f"[API] Post {post_id} deleted successfully")
         return None
+    except PostNotFound:
+        print(f"[API] Post {post_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
+    except Forbidden:
+        print(f"[API] User {current_user.id} not authorized to delete post {post_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this post"
+        )
     except Exception as e:
         print(f"[API] Error deleting post: {e}")
         traceback.print_exc()
@@ -252,7 +264,6 @@ async def delete_comment(
         print(f"\n[API] Delete comment {comment_id} from post {post_id} by user {current_user.id}")
         print(f"[API] User is_admin: {current_user.is_admin}")
         service = CommentService(db)
-        # Ensure is_admin is bool, not None
         is_admin = bool(current_user.is_admin) if current_user.is_admin is not None else False
         await service.delete_comment(
             comment_id=comment_id,
@@ -261,6 +272,18 @@ async def delete_comment(
         )
         print(f"[API] Comment {comment_id} deleted successfully")
         return None
+    except CommentNotFound:
+        print(f"[API] Comment {comment_id} not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found"
+        )
+    except Forbidden:
+        print(f"[API] User {current_user.id} not authorized to delete comment {comment_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this comment"
+        )
     except Exception as e:
         print(f"[API] Error deleting comment: {e}")
         traceback.print_exc()
