@@ -5,14 +5,14 @@ sys.path.insert(0, '.')
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from app.config import DATABASE_URL
+from app.config import settings
 from app.models.users import UserModel
 from app.models.roles import RoleModel
 from app.services.auth import AuthService
 
 async def create_test_data():
     # Create async engine
-    engine = create_async_engine(DATABASE_URL, echo=False)
+    engine = create_async_engine(settings.get_db_url, echo=False)
     
     # Create session factory
     async_session = sessionmaker(
@@ -47,6 +47,8 @@ async def create_test_data():
                     user.is_admin = True
                     await session.commit()
                     print(f"    ✅ User is now admin")
+                else:
+                    print(f"    ✅ User is already admin")
             else:
                 print("👤 Creating user alice@betony.local...")
                 hashed_password = AuthService.hash_password("password123")
@@ -55,7 +57,7 @@ async def create_test_data():
                     email="alice@betony.local",
                     hashed_password=hashed_password,
                     role_id=1,
-                    is_admin=True  # ← SET AS ADMIN
+                    is_admin=True  # SET AS ADMIN
                 )
                 session.add(new_user)
                 await session.commit()
