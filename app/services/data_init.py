@@ -11,10 +11,6 @@ from app.config import settings
 from app.database.db_manager import DBManager
 from app.database.database import async_session_maker
 from app.services.auth import AuthService
-from app.services.posts import PostService
-from app.services.likes import LikeService
-from app.services.comments import CommentService
-from app.services.friendships import FriendshipService
 from app.models.users import UserModel
 from app.schemes.posts import PostCreate
 from app.schemes.comments import CommentCreate
@@ -99,7 +95,6 @@ async def init_sample_data():
                 return
             
             # Create sample posts
-            posts_service = PostService(db)
             posts_data = [
                 {
                     "title": "Мой первый пост в блоге",
@@ -160,18 +155,21 @@ async def init_sample_data():
                         title=post_data["title"],
                         content=post_data["content"]
                     )
-                    post = await posts_service.create_post(post_create, post_data["user_id"])
+                    # Use repository directly with correct signature
+                    post = await db.posts.create_post(post_create, post_data["user_id"])
+                    await db.commit()
                     posts.append(post)
                     print(f"[INIT] ✅ Created post: {post.title}")
                 except Exception as e:
                     print(f"[INIT] ❌ Error creating post {post_data['title']}: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             if not posts:
-                print("[INIT] No posts created")
+                print("[INIT] ❌ No posts created, aborting")
                 return
             
             # Create sample likes
-            likes_service = LikeService(db)
             like_pairs = [
                 (posts[0].id, users[1].id),
                 (posts[0].id, users[2].id),
@@ -193,12 +191,12 @@ async def init_sample_data():
             
             for post_id, user_id in like_pairs:
                 try:
-                    like = await likes_service.create_like(post_id, user_id)
+                    like = await db.likes.create_like(post_id, user_id)
+                    await db.commit()
                 except Exception as e:
                     print(f"[INIT] ❌ Error creating like: {e}")
             
             # Create sample comments
-            comments_service = CommentService(db)
             comments_data = [
                 {
                     "post_id": posts[0].id,
@@ -249,17 +247,14 @@ async def init_sample_data():
             
             for comment_data in comments_data:
                 try:
-                    comment_create = CommentCreate(content=comment_data["content"])
-                    comment = await comments_service.create_comment(
+                    comment = await db.comments.create_comment(
                         comment_data["post_id"],
-                        comment_create,
-                        comment_data["user_id"]
+                        comment_data["user_id"],
+                        comment_data["content"]
                     )
+                    await db.commit()
                 except Exception as e:
                     print(f"[INIT] ❌ Error creating comment: {e}")
-            
-            # Create sample friendships - REMOVED to allow manual testing
-            # Users can now add friends manually through the UI
             
             print(f"\n[INIT] ✅ Sample data initialization completed successfully!")
             print(f"[INIT] Created {len(users)} users")
