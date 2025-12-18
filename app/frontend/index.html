@@ -154,15 +154,24 @@
       background: rgba(16, 185, 129, 0.1);
       border: 1px solid rgba(16, 185, 129, 0.3);
       border-radius: 10px;
-      padding: 12px;
+      padding: 15px;
       margin-bottom: 20px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-light);
-      text-align: center;
     }
     
     .test-data-hint strong {
       color: var(--success);
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    .test-data-hint div {
+      margin: 4px 0;
+      font-family: 'Courier New', monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px 8px;
+      border-radius: 4px;
     }
     
     .btn {
@@ -641,7 +650,9 @@
         <!-- LOGIN FORM -->
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
           <div class="test-data-hint">
-            💡 Тестовые данные: <strong>alice@betony.local</strong> / <strong>password123</strong>
+            💡 <strong>Легко войти для тестирования:</strong>
+            <div>🚬 Обычный пользователь: test@betony.local / test123</div>
+            <div>👑 Администратор: admin@betony.local / admin123</div>
           </div>
           
           <div class="form-group">
@@ -1302,7 +1313,7 @@
       if (!currentUser || !allUsersCache.length) {
         const empty = document.createElement('div');
         empty.className = 'empty-state';
-        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>Загрузка...</p>';
+        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>Загружка...</p>';
         container.appendChild(empty);
         return;
       }
