@@ -669,8 +669,8 @@
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
           <div class="test-data-hint">
             💡 <strong>Легко войти для тестирования:</strong>
+            <div>👑 Администратор: alice@betony.local / password123</div>
             <div>🚬 Обычный пользователь: test@betony.local / test123</div>
-            <div>👑 Администратор: admin@betony.local / admin123</div>
           </div>
           
           <div class="form-group">
@@ -850,11 +850,12 @@
         });
         
         const data = await response.json();
-        console.log('[AUTH] Login response:', {status: response.status, has_token: !!data.access_token});
+        console.log('[AUTH] Login response:', {status: response.status, user: data.user});
         
         if (response.ok && data.access_token) {
           authToken = data.access_token;
-          currentUser = data.user || { username: email.split('@')[0], id: 1 };
+          currentUser = data.user || { username: email.split('@')[0], id: 1, is_admin: false };
+          console.log('[AUTH] Current user:', currentUser);
           showStatus('loginStatus', '✅ Вход успешен!', 'success');
           setTimeout(showApp, 500);
         } else {
@@ -906,7 +907,8 @@
         
         if (response.ok && data.access_token) {
           authToken = data.access_token;
-          currentUser = data.user || { username: username };
+          currentUser = data.user || { username: username, is_admin: false };
+          console.log('[AUTH] Registered user:', currentUser);
           showStatus('regStatus', '✅ Регистрация успешна!', 'success');
           setTimeout(showApp, 500);
         } else {
@@ -927,8 +929,10 @@
       
       const username = currentUser.username || currentUser.name || 'Пользователь';
       const initials = username.substring(0, 2).toUpperCase();
-      document.getElementById('currentUserName').textContent = username;
+      document.getElementById('currentUserName').textContent = username + (currentUser.is_admin ? ' 👑' : '');
       document.getElementById('userAvatar').textContent = initials;
+      
+      console.log('[APP] User is admin:', currentUser.is_admin);
 
       await Promise.all([
         loadUserLikes(),
@@ -980,7 +984,7 @@
 
     async function loadUserLikes() {
       try {
-        console.log('[LIKES] Загружаем лайки...');
+        console.log('[LIKES] Загружаем лайки для пользователя:', currentUser.id);
         const res = await apiCall(`/likes/user/${currentUser.id}`);
         if (res.ok) {
           const likes = await res.json();
@@ -1024,8 +1028,10 @@
       
       const isLiked = userLikesCache.has(post.id);
       const isAuthor = currentUser.id === post.user_id;
-      const isAdmin = currentUser.is_admin;
+      const isAdmin = currentUser.is_admin === true;
       const canDelete = isAuthor || isAdmin;
+      
+      console.log(`[POSTS] Post ${post.id}: isAuthor=${isAuthor}, isAdmin=${isAdmin}, canDelete=${canDelete}`);
       
       let likesCount = 0;
       let commentsCount = 0;
@@ -1088,7 +1094,8 @@
       await loadPostComments(post.id);
     }
 
-    window.deletePost = async function(postId) {      if (!confirm('Вы уверены? Пост будет удален.')) return;
+    window.deletePost = async function(postId) {
+      if (!confirm('Вы уверены? Пост будет удален.')) return;
       
       try {
         const res = await apiCall(`/posts/${postId}`, {
@@ -1248,7 +1255,7 @@
           const meta = document.createElement('div');
           meta.className = 'user-meta';
           meta.innerHTML = `
-            <div class="user-name">${user.username || 'Пользователь'}</div>
+            <div class="user-name">${user.username || 'Пользователь'}${user.is_admin ? ' 👑' : ''}</div>
             <div class="user-email">${user.email}</div>
           `;
           main.appendChild(meta);
@@ -1385,7 +1392,7 @@
         const meta = document.createElement('div');
         meta.className = 'user-meta';
         meta.innerHTML = `
-          <div class="user-name">${user.username || 'Пользователь'}</div>
+          <div class="user-name">${user.username || 'Пользователь'}${user.is_admin ? ' 👑' : ''}</div>
           <div class="user-email">${user.email}</div>
         `;
         main.appendChild(meta);
@@ -1412,7 +1419,7 @@
         <div><span class="profile-label">Имя:</span> ${currentUser.username || currentUser.name || 'Не указано'}</div>
         <div><span class="profile-label">Email:</span> ${currentUser.email || 'Не указано'}</div>
         <div><span class="profile-label">ID:</span> ${currentUser.id || '—'}</div>
-        <div><span class="profile-label">Статус:</span> ${currentUser.is_admin ? '👑 Администратор' : '👤 Обычный пользователь'}</div>
+        <div><span class="profile-label">Статус:</span> ${currentUser.is_admin === true ? '👑 Администратор' : '👤 Обычный пользователь'}</div>
       `;
 
       card.appendChild(meta);
@@ -1552,15 +1559,23 @@
           return;
         }
         
-        listEl.innerHTML = comments.map(c => `
-          <div class="comment-item">
-            <div class="comment-text">
-              <div class="comment-author">${c.author_username || 'Неизвестно'}</div>
-              <div class="comment-content">${c.content}</div>
+        listEl.innerHTML = comments.map(c => {
+          const isAuthorOfComment = currentUser.id === c.user_id;
+          const isAdminUser = currentUser.is_admin === true;
+          const canDeleteComment = isAuthorOfComment || isAdminUser;
+          
+          console.log(`[COMMENTS] Comment ${c.id}: isAuthor=${isAuthorOfComment}, isAdmin=${isAdminUser}, canDelete=${canDeleteComment}`);
+          
+          return `
+            <div class="comment-item">
+              <div class="comment-text">
+                <div class="comment-author">${c.author_username || 'Неизвестно'}</div>
+                <div class="comment-content">${c.content}</div>
+              </div>
+              ${canDeleteComment ? `<button class="btn btn-small btn-danger comment-delete-btn" onclick="deleteComment(${postId}, ${c.id})">🗑️</button>` : ''}
             </div>
-            ${(currentUser.id === c.user_id || currentUser.is_admin) ? `<button class="btn btn-small btn-danger comment-delete-btn" onclick="deleteComment(${postId}, ${c.id})">🗑️</button>` : ''}
-          </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (e) {
         console.error('[COMMENT] Ошибка загрузки:', e);
       }
