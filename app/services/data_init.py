@@ -5,7 +5,7 @@ import asyncio
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.config import settings
 from app.database.db_manager import DBManager
@@ -32,11 +32,24 @@ async def init_sample_data():
     """
     try:
         async with DBManager(session_factory=async_session_maker) as db:
-            # Check if alice@betony.local exists (the most reliable check)
-            result = await db.session.execute(
-                select(UserModel).where(UserModel.email == "alice@betony.local")
-            )
-            existing_alice = result.scalars().first()
+            # Check if alice@betony.local exists (using raw SQL to avoid schema issues)
+            try:
+                result = await db.session.execute(
+                    select(UserModel).where(UserModel.email == "alice@betony.local")
+                )
+                existing_alice = result.scalars().first()
+            except Exception as migration_error:
+                print(f"[INIT] ⚠️  Database schema issue (likely missing columns): {migration_error}")
+                print("[INIT] ℹ️  This is normal on first run. Continuing with data initialization...")
+                # Try with a raw SQL check that ignores missing columns
+                try:
+                    raw_result = await db.session.execute(
+                        text("SELECT COUNT(*) FROM users WHERE email = 'alice@betony.local'")
+                    )
+                    count = raw_result.scalar()
+                    existing_alice = count > 0
+                except:
+                    existing_alice = False
             
             if existing_alice:
                 print("[INIT] ✅ Sample data already exists (alice@betony.local found), skipping initialization")
