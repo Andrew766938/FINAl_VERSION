@@ -57,7 +57,7 @@ async def init_sample_data():
             
             print("[INIT] 🚀 Starting sample data initialization...")
             
-            # Create sample users
+            # Create sample users - expanded to 15 users
             auth_service = AuthService(db)
             
             users_data = [
@@ -66,6 +66,16 @@ async def init_sample_data():
                 {"email": "charlie@betony.local", "password": "password123", "name": "Charlie Brown"},
                 {"email": "diana@betony.local", "password": "password123", "name": "Diana Prince"},
                 {"email": "evan@betony.local", "password": "password123", "name": "Evan Davis"},
+                {"email": "fiona@betony.local", "password": "password123", "name": "Fiona Garcia"},
+                {"email": "george@betony.local", "password": "password123", "name": "George Martinez"},
+                {"email": "hannah@betony.local", "password": "password123", "name": "Hannah Rodriguez"},
+                {"email": "ian@betony.local", "password": "password123", "name": "Ian Wilson"},
+                {"email": "julia@betony.local", "password": "password123", "name": "Julia Anderson"},
+                {"email": "kevin@betony.local", "password": "password123", "name": "Kevin Taylor"},
+                {"email": "lisa@betony.local", "password": "password123", "name": "Lisa Thomas"},
+                {"email": "michael@betony.local", "password": "password123", "name": "Michael Lee"},
+                {"email": "nina@betony.local", "password": "password123", "name": "Nina White"},
+                {"email": "oliver@betony.local", "password": "password123", "name": "Oliver Harris"},
             ]
             
             users = []
@@ -120,7 +130,27 @@ async def init_sample_data():
                     "title": "Books Worth Reading",
                     "content": "I've been reading some great books lately. Check out 'Clean Code' and 'Design Patterns' - they've improved my programming skills.",
                     "user_id": users[4].id
-                }
+                },
+                {
+                    "title": "Coffee and Coding",
+                    "content": "There's something magical about a good cup of coffee while coding. What's your favorite coding beverage?",
+                    "user_id": users[5].id
+                },
+                {
+                    "title": "Machine Learning Journey",
+                    "content": "Started exploring machine learning this week. The possibilities are endless and I'm excited to dive deeper!",
+                    "user_id": users[6].id
+                },
+                {
+                    "title": "Frontend vs Backend",
+                    "content": "Both frontend and backend development have their charms. I love working on full-stack projects where I can do both!",
+                    "user_id": users[7].id
+                },
+                {
+                    "title": "Open Source Contributions",
+                    "content": "Made my first open source contribution today! It feels great to give back to the community.",
+                    "user_id": users[8].id
+                },
             ]
             
             posts = []
@@ -155,6 +185,10 @@ async def init_sample_data():
                 (posts[4].id, users[0].id),
                 (posts[4].id, users[2].id),
                 (posts[5].id, users[0].id),
+                (posts[6].id, users[7].id),
+                (posts[7].id, users[8].id),
+                (posts[8].id, users[9].id),
+                (posts[9].id, users[10].id),
             ]
             
             for post_id, user_id in like_pairs:
@@ -201,6 +235,16 @@ async def init_sample_data():
                     "user_id": users[0].id,
                     "content": "Clean Code is my favorite book! Great recommendations."
                 },
+                {
+                    "post_id": posts[6].id,
+                    "user_id": users[8].id,
+                    "content": "Coffee is essential! I prefer green tea though."
+                },
+                {
+                    "post_id": posts[7].id,
+                    "user_id": users[9].id,
+                    "content": "ML is fascinating! Check out PyTorch if you haven't already."
+                },
             ]
             
             for comment_data in comments_data:
@@ -214,30 +258,14 @@ async def init_sample_data():
                 except Exception as e:
                     print(f"[INIT] ❌ Error creating comment: {e}")
             
-            # Create sample friendships
-            friendship_service = FriendshipService(db)
-            friendships_data = [
-                (users[0].id, users[1].id),
-                (users[0].id, users[2].id),
-                (users[0].id, users[3].id),
-                (users[1].id, users[2].id),
-                (users[1].id, users[4].id),
-                (users[2].id, users[3].id),
-            ]
-            
-            for user_id_1, user_id_2 in friendships_data:
-                try:
-                    await friendship_service.add_friend(user_id_1, user_id_2)
-                    await friendship_service.add_friend(user_id_2, user_id_1)
-                except Exception as e:
-                    print(f"[INIT] ❌ Error creating friendship: {e}")
+            # Create sample friendships - REMOVED to allow manual testing
+            # Users can now add friends manually through the UI
             
             print(f"\n[INIT] ✅ Sample data initialization completed successfully!")
             print(f"[INIT] Created {len(users)} users")
             print(f"[INIT] Created {len(posts)} posts")
             print(f"[INIT] Created {len(like_pairs)} likes")
             print(f"[INIT] Created {len(comments_data)} comments")
-            print(f"[INIT] Created {len(friendships_data)} friendships")
             print(f"\n[INIT] 📌 Test credentials:")
             print(f"[INIT] Email: alice@betony.local")
             print(f"[INIT] Password: password123")
