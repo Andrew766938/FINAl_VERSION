@@ -16,7 +16,7 @@ async function handleLogin(event) {
   btn.disabled = true;
   status.style.display = 'block';
   status.className = 'form-loading';
-  status.textContent = '⏳ Оползняю логин...';
+  status.textContent = '⏳ Опознаю логин...';
   
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -63,7 +63,7 @@ async function handleRegister(event) {
   btn.disabled = true;
   status.style.display = 'block';
   status.className = 'form-loading';
-  status.textContent = '⏳ Опольняю регистрацию...';
+  status.textContent = '⏳ Опознаю регистрацию...';
   
   try {
     const response = await fetch(`${API_URL}/auth/register`, {
@@ -124,33 +124,23 @@ async function loadUserData() {
   } catch (err) {
     console.error('Error loading friends:', err);
   }
-  
-  // Load liked post IDs
+}
+
+// Helper: Check if post is liked
+async function isPostLiked(postId) {
   try {
-    const response = await fetch(`${API_URL}/posts/`, {
+    const response = await fetch(`${API_URL}/posts/${postId}/likes`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     
     if (response.ok) {
-      const posts = await response.json();
-      likedPosts.clear();
-      
-      for (const post of posts) {
-        const likesResponse = await fetch(`${API_URL}/posts/${post.id}/likes`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        
-        if (likesResponse.ok) {
-          const likes = await likesResponse.json();
-          if (likes.some(like => like.user_id === currentUser.id)) {
-            likedPosts.add(post.id);
-          }
-        }
-      }
+      const likes = await response.json();
+      return likes.some(like => like.user_id === currentUser.id);
     }
   } catch (err) {
-    console.error('Error loading likes:', err);
+    console.error('Error checking like:', err);
   }
+  return false;
 }
 
 // ===== TAB SWITCHING =====
@@ -233,7 +223,7 @@ async function loadFeed() {
       
       container.innerHTML = '';
       for (const post of posts) {
-        const postEl = createPostElement(post);
+        const postEl = await createPostElement(post);
         container.appendChild(postEl);
       }
     }
@@ -247,7 +237,7 @@ async function createPost() {
   const content = document.getElementById('postContent').value.trim();
   
   if (!title || !content) {
-    alert('⚠️ Попольните все поля');
+    alert('⚠️ Пополните все поля');
     return;
   }
   
@@ -273,7 +263,7 @@ async function createPost() {
   }
 }
 
-function createPostElement(post) {
+async function createPostElement(post) {
   const div = document.createElement('div');
   div.className = 'post';
   
@@ -281,7 +271,7 @@ function createPostElement(post) {
   const date = new Date(post.created_at).toLocaleDateString('ru-RU');
   const isMyPost = currentUser?.id === post.user_id;
   const isFriend = friendIds.has(post.user_id);
-  const isLiked = likedPosts.has(post.id);
+  const isLiked = await isPostLiked(post.id);
   const isOwnProfile = currentUser?.id === post.user_id;
   
   div.innerHTML = `
@@ -310,7 +300,7 @@ function createPostElement(post) {
       <span>❤️ ${post.likes_count || 0} лайков</span>
     </div>
     <div class="post-actions">
-      <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}">❤️ ${isLiked ? 'Нравится' : 'Нравится'}</button>
+      <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}">${isLiked ? '❤️ Нравится' : '❤️ Нравится'}</button>
       <button class="btn-action" onclick="toggleComments(${post.id})">💬 Комментарии</button>
     </div>
     <div class="comments-section" id="comments-${post.id}" style="display:none;">
@@ -459,7 +449,7 @@ async function deleteComment(postId, commentId) {
 async function toggleLike(postId) {
   try {
     const btn = document.getElementById(`like-btn-${postId}`);
-    const isLiked = likedPosts.has(postId);
+    const isLiked = await isPostLiked(postId);
     
     const response = await fetch(`${API_URL}/posts/${postId}/like`, {
       method: isLiked ? 'DELETE' : 'POST',
@@ -467,12 +457,17 @@ async function toggleLike(postId) {
     });
     
     if (response.ok) {
+      // Обновляем кнопку сразу
       if (isLiked) {
-        likedPosts.delete(postId);
         btn.classList.remove('liked');
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
       } else {
-        likedPosts.add(postId);
         btn.classList.add('liked');
+        btn.style.background = 'rgba(236, 72, 153, 0.2)';
+        btn.style.color = 'var(--secondary)';
+        btn.style.borderColor = 'rgba(236, 72, 153, 0.3)';
       }
       loadFeed();
     }
@@ -495,19 +490,11 @@ async function loadFavorites() {
     if (response.ok) {
       const allPosts = await response.json();
       
-      // Get all likes for current user
       let favoredPosts = [];
       for (const post of allPosts) {
-        const likesResponse = await fetch(`${API_URL}/posts/${post.id}/likes`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        
-        if (likesResponse.ok) {
-          const likes = await likesResponse.json();
-          const userLiked = likes.some(like => like.user_id === currentUser.id);
-          if (userLiked) {
-            favoredPosts.push(post);
-          }
+        const isLiked = await isPostLiked(post.id);
+        if (isLiked) {
+          favoredPosts.push(post);
         }
       }
       
@@ -518,7 +505,7 @@ async function loadFavorites() {
       
       container.innerHTML = '';
       for (const post of favoredPosts) {
-        const postEl = createPostElement(post);
+        const postEl = await createPostElement(post);
         container.appendChild(postEl);
       }
     }
@@ -636,7 +623,6 @@ async function loadAccount() {
 window.addEventListener('load', async () => {
   const token = localStorage.getItem('token');
   if (token) {
-    // TODO: Verify token is still valid
     showApp();
   } else {
     showAuth();
