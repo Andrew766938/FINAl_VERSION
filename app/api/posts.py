@@ -148,10 +148,14 @@ async def delete_post(
     db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    """Delete a post"""
+    """Delete a post (author or admin)"""
     try:
         service = PostService(db)
-        await service.delete_post(post_id, current_user.id)
+        await service.delete_post(
+            post_id=post_id,
+            user_id=current_user.id,
+            is_admin=current_user.is_admin,  # Admin can delete any post
+        )
         return None
     except Exception as e:
         print(f"[API] Error deleting post: {e}")
@@ -236,10 +240,14 @@ async def delete_comment(
     db: DBDep,
     current_user: UserModel = Depends(get_current_user),
 ):
-    """Delete a comment"""
+    """Delete a comment (author or admin)"""
     try:
         service = CommentService(db)
-        await service.delete_comment(comment_id, current_user.id)
+        await service.delete_comment(
+            comment_id=comment_id,
+            current_user_id=current_user.id,
+            is_admin=current_user.is_admin,  # Admin can delete any comment
+        )
         return None
     except Exception as e:
         print(f"[API] Error deleting comment: {e}")
