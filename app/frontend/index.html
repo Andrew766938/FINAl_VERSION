@@ -641,16 +641,16 @@
         <!-- LOGIN FORM -->
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
           <div class="test-data-hint">
-            💡 Тест: <strong>alice@betony.local</strong> / <strong>password123</strong>
+            💡 Тестовые данные: <strong>alice@betony.local</strong> / <strong>password123</strong>
           </div>
           
           <div class="form-group">
             <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" required placeholder="user@example.com" autocomplete="off">
+            <input type="email" id="loginEmail" required placeholder="your@email.com" autocomplete="off">
           </div>
           <div class="form-group">
             <label for="loginPassword">Пароль</label>
-            <input type="password" id="loginPassword" required placeholder="Ваш пароль" autocomplete="off">
+            <input type="password" id="loginPassword" required placeholder="Введите пароль" autocomplete="off">
           </div>
           <div id="loginStatus" style="display: none;"></div>
           <button type="submit" class="btn btn-primary" id="loginBtn">Войти</button>
@@ -660,15 +660,15 @@
         <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label for="regUsername">Имя пользователя</label>
-            <input type="text" id="regUsername" required placeholder="Ваше имя">
+            <input type="text" id="regUsername" required placeholder="Введите имя">
           </div>
           <div class="form-group">
             <label for="regEmail">Email</label>
-            <input type="email" id="regEmail" required placeholder="user@example.com">
+            <input type="email" id="regEmail" required placeholder="your@email.com">
           </div>
           <div class="form-group">
             <label for="regPassword">Пароль</label>
-            <input type="password" id="regPassword" required placeholder="Ваш пароль">
+            <input type="password" id="regPassword" required placeholder="Введите пароль">
           </div>
           <div class="form-group">
             <label for="regPasswordConfirm">Подтвердите пароль</label>
@@ -707,17 +707,17 @@
         <!-- FEED TAB -->
         <div id="feedTab" class="tabs-content active">
           <div class="post-form">
-            <h2>✨ Создайте свой первый пост</h2>
+            <h2>✨ Создайте новый пост</h2>
             <form id="createPostForm" onsubmit="handleCreatePost(event)">
               <div class="form-group">
                 <label for="postTitle">Заголовок</label>
-                <input type="text" id="postTitle" required placeholder="О чём вы хотите рассказать?">
+                <input type="text" id="postTitle" required placeholder="О чём будет ваш пост?">
               </div>
               <div class="form-group">
-                <label for="postContent">Содержание</label>
-                <textarea id="postContent" required placeholder="Поделитесь своими мыслями..." rows="5"></textarea>
+                <label for="postContent">Текст поста</label>
+                <textarea id="postContent" required placeholder="Напишите что-нибудь интересное..." rows="5"></textarea>
               </div>
-              <button type="submit" class="btn btn-primary" id="createPostBtn">📝 Опубликовать</button>
+              <button type="submit" class="btn btn-primary" id="createPostBtn">📝 Опубликовать пост</button>
             </form>
           </div>
           
@@ -726,25 +726,25 @@
         
         <!-- FAVORITES TAB -->
         <div id="favoritesTab" class="tabs-content">
-          <h2 style="margin-bottom: 20px; color: var(--text-white);">⭐ Избранное</h2>
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">⭐ Избранные посты</h2>
           <div id="favoritesContainer" class="posts-grid"></div>
         </div>
         
         <!-- USERS TAB -->
         <div id="usersTab" class="tabs-content">
-          <h2 style="margin-bottom: 20px; color: var(--text-white);">👫 Люди</h2>
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">👥 Другие пользователи</h2>
           <div id="usersContainer" class="users-list"></div>
         </div>
         
         <!-- FRIENDS TAB -->
         <div id="friendsTab" class="tabs-content">
-          <h2 style="margin-bottom: 20px; color: var(--text-white);">❤️ Друзья</h2>
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">❤️ Мои друзья</h2>
           <div id="friendsContainer" class="friends-list"></div>
         </div>
         
         <!-- PROFILE TAB -->
         <div id="profileTab" class="tabs-content">
-          <h2 style="margin-bottom: 20px; color: var(--text-white);">👤 Профиль</h2>
+          <h2 style="margin-bottom: 20px; color: var(--text-white);">👤 Мой профиль</h2>
           <div id="profileContainer"></div>
         </div>
       </main>
@@ -806,12 +806,12 @@
       const loginBtn = document.getElementById('loginBtn');
       
       if (!email || !password) {
-        showStatus('loginStatus', '❌ Заполните все поля', 'error');
+        showStatus('loginStatus', '❌ Пожалуйста, заполните все поля', 'error');
         return;
       }
       
       loginBtn.disabled = true;
-      showStatus('loginStatus', '⏳ Входим...', 'loading');
+      showStatus('loginStatus', '⏳ Вход в систему...', 'loading');
       
       try {
         const response = await fetch(`${API_URL}/auth/login`, {
@@ -826,7 +826,7 @@
         if (response.ok && data.access_token) {
           authToken = data.access_token;
           currentUser = data.user || { username: email.split('@')[0], id: 1 };
-          showStatus('loginStatus', '✅ Успешный вход!', 'success');
+          showStatus('loginStatus', '✅ Вход успешен!', 'success');
           setTimeout(showApp, 500);
         } else {
           const errorMsg = data.detail || data.error || 'Неверный email или пароль';
@@ -834,7 +834,7 @@
         }
       } catch (error) {
         console.error('[AUTH] Login error:', error);
-        showStatus('loginStatus', '❌ Ошибка соединения', 'error');
+        showStatus('loginStatus', '❌ Ошибка соединения с сервером', 'error');
       } finally {
         loginBtn.disabled = false;
       }
@@ -859,12 +859,12 @@
       }
       
       if (password.length < 6) {
-        showStatus('regStatus', '❌ Пароль не менее 6 символов', 'error');
+        showStatus('regStatus', '❌ Пароль должен быть минимум 6 символов', 'error');
         return;
       }
       
       regBtn.disabled = true;
-      showStatus('regStatus', '⏳ Регистрируемся...', 'loading');
+      showStatus('regStatus', '⏳ Регистрация...', 'loading');
       
       try {
         const response = await fetch(`${API_URL}/auth/register`, {
@@ -951,21 +951,21 @@
 
     async function loadUserLikes() {
       try {
-        console.log('[LIKES] Loading user likes...');
+        console.log('[LIKES] Загружаем лайки...');
         const res = await apiCall(`/likes/user/${currentUser.id}`);
         if (res.ok) {
           const likes = await res.json();
           userLikesCache = new Set(likes.map(like => like.post_id));
-          console.log('[LIKES] User has liked posts:', Array.from(userLikesCache));
+          console.log('[LIKES] Пользователь лайкнул посты:', Array.from(userLikesCache));
         }
       } catch (e) {
-        console.error('[LIKES] Error loading user likes:', e);
+        console.error('[LIKES] Ошибка загрузки лайков:', e);
       }
     }
 
     async function loadPosts() {
       try {
-        console.log('[POSTS] Loading posts...');
+        console.log('[POSTS] Загружаем посты...');
         const res = await apiCall('/posts/');
         const data = await res.json();
         const container = document.getElementById('postsContainer');
@@ -974,7 +974,7 @@
         if (!res.ok || !Array.isArray(data) || data.length === 0) {
           const empty = document.createElement('div');
           empty.className = 'empty-state';
-          empty.innerHTML = '<div class="empty-state-icon">📝</div><p>Пока нет постов. Создайте первый!</p>';
+          empty.innerHTML = '<div class="empty-state-icon">📝</div><p>Пока нет постов. Создайте первый пост!</p>';
           container.appendChild(empty);
           return;
         }
@@ -983,14 +983,14 @@
           await renderPost(post, container);
         }
       } catch (e) {
-        console.error('[POSTS] Error loading posts:', e);
+        console.error('[POSTS] Ошибка загрузки постов:', e);
       }
     }
 
     async function renderPost(post, container) {
       const el = document.createElement('div');
       el.className = 'post';
-      const authorName = post.author_name || post.user?.name || 'Неизвестный автор';
+      const authorName = post.author_name || post.user?.name || 'Автор';
       const authorEmail = post.author_email || post.user?.email || 'user';
       
       const isLiked = userLikesCache.has(post.id);
@@ -1005,7 +1005,7 @@
           likesCount = Array.isArray(likes) ? likes.length : 0;
         }
       } catch (e) {
-        console.error('[LIKES] Error:', e);
+        console.error('[LIKES] Ошибка:', e);
       }
       
       try {
@@ -1015,7 +1015,7 @@
           commentsCount = Array.isArray(comments) ? comments.length : 0;
         }
       } catch (e) {
-        console.error('[COMMENTS] Error:', e);
+        console.error('[COMMENTS] Ошибка:', e);
       }
       
       el.innerHTML = `
@@ -1038,9 +1038,9 @@
         </div>
         <div class="post-actions">
           <button class="btn btn-small ${isLiked ? 'btn-liked' : 'btn-secondary'}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">
-            ${isLiked ? '❤️ Убрать лайк' : '🤍 Лайк'}
+            ${isLiked ? '❤️ Убрать лайк' : '🤍 Поставить лайк'}
           </button>
-          <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментарий</button>
+          <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментировать</button>
         </div>
         <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
           <div class="comment-form">
@@ -1063,17 +1063,17 @@
       
       try {
         if (isLiked) {
-          console.log('[LIKE] Unliking post:', postId);
+          console.log('[LIKE] Удаляем лайк с поста:', postId);
           const response = await apiCall(`/posts/${postId}/like`, {
             method: 'DELETE'
           });
           
           if (response.ok) {
-            console.log('[LIKE] Successfully unliked!');
+            console.log('[LIKE] Лайк удален!');
             userLikesCache.delete(postId);
             
             if (btn) {
-              btn.textContent = '🤍 Лайк';
+              btn.textContent = '🤍 Поставить лайк';
               btn.classList.remove('btn-liked');
               btn.classList.add('btn-secondary');
             }
@@ -1085,12 +1085,12 @@
               await loadFavorites();
             }
             
-            alert('❌ Лайк убран!');
+            alert('❌ Лайк удален');
           } else {
             alert('❌ Ошибка при удалении лайка');
           }
         } else {
-          console.log('[LIKE] Liking post:', postId);
+          console.log('[LIKE] Добавляем лайк к посту:', postId);
           const response = await apiCall(`/posts/${postId}/like`, {
             method: 'POST',
             body: JSON.stringify({})
@@ -1099,7 +1099,7 @@
           const data = await response.json();
           
           if (response.ok) {
-            console.log('[LIKE] Successfully liked!');
+            console.log('[LIKE] Лайк добавлен!');
             userLikesCache.add(postId);
             
             if (btn) {
@@ -1110,13 +1110,13 @@
             
             await updateLikesCount(postId);
             
-            alert('✅ Лайк добавлен!');
+            alert('✅ Лайк поставлен');
           } else {
             alert('❌ ' + (data.detail || 'Ошибка при лайке'));
           }
         }
       } catch (e) {
-        console.error('[LIKE] Error:', e);
+        console.error('[LIKE] Ошибка:', e);
         alert('❌ Ошибка: ' + e.message);
       } finally {
         if (btn) btn.disabled = false;
@@ -1131,13 +1131,13 @@
         const el = document.getElementById(`likes-count-${postId}`);
         if (el) el.textContent = `❤️ Лайков: ${likesCount}`;
       } catch (e) {
-        console.error('[LIKE] Error updating count:', e);
+        console.error('[LIKE] Ошибка обновления счётчика:', e);
       }
     }
 
     async function loadFavorites() {
       try {
-        console.log('[FAVORITES] Loading favorites...');
+        console.log('[FAVORITES] Загружаем избранное...');
         const container = document.getElementById('favoritesContainer');
         container.innerHTML = '';
         
@@ -1146,7 +1146,7 @@
         if (likedPostIds.length === 0) {
           const empty = document.createElement('div');
           empty.className = 'empty-state';
-          empty.innerHTML = '<div class="empty-state-icon">⭐</div><p>У вас пока нет избранных постов. Поставьте лайк на пост, чтобы добавить его в избранное!</p>';
+          empty.innerHTML = '<div class="empty-state-icon">⭐</div><p>Нет избранных постов. Поставьте лайк на пост, чтобы добавить его в избранное!</p>';
           container.appendChild(empty);
           return;
         }
@@ -1159,17 +1159,17 @@
               await renderPost(post, container);
             }
           } catch (e) {
-            console.error('[FAVORITES] Error loading post:', postId, e);
+            console.error('[FAVORITES] Ошибка загрузки поста:', postId, e);
           }
         }
       } catch (e) {
-        console.error('[FAVORITES] Error:', e);
+        console.error('[FAVORITES] Ошибка:', e);
       }
     }
 
     async function loadUsers() {
       try {
-        console.log('[USERS] Loading users...');
+        console.log('[USERS] Загружаем пользователей...');
         const res = await apiCall('/auth/users');
         const data = await res.json();
         const container = document.getElementById('usersContainer');
@@ -1178,7 +1178,7 @@
         if (!res.ok || !Array.isArray(data) || data.length === 0) {
           const empty = document.createElement('div');
           empty.className = 'empty-state';
-          empty.innerHTML = '<div class="empty-state-icon">👥</div><p>Пользователей пока нет.</p>';
+          empty.innerHTML = '<div class="empty-state-icon">👥</div><p>Пользователей не найдено.</p>';
           container.appendChild(empty);
           return;
         }
@@ -1196,7 +1196,7 @@
           const meta = document.createElement('div');
           meta.className = 'user-meta';
           meta.innerHTML = `
-            <div class="user-name">${user.username || 'Без имени'}</div>
+            <div class="user-name">${user.username || 'Пользователь'}</div>
             <div class="user-email">${user.email}</div>
           `;
           main.appendChild(meta);
@@ -1216,7 +1216,7 @@
             friendBtn.style.opacity = '0.6';
             friendBtn.style.cursor = 'default';
           } else if (user.id === currentUser.id) {
-            friendBtn.textContent = '👑 Вы';
+            friendBtn.textContent = '👑 Это я';
             friendBtn.disabled = true;
             friendBtn.style.opacity = '0.6';
             friendBtn.style.cursor = 'default';
@@ -1235,30 +1235,30 @@
           container.appendChild(card);
         });
       } catch (e) {
-        console.error('[USERS] Error loading users:', e);
+        console.error('[USERS] Ошибка загрузки:', e);
       }
     }
 
     async function loadFriendships() {
       try {
-        console.log('[FRIENDSHIPS] Loading friendships...');
+        console.log('[FRIENDSHIPS] Загружаем друзей...');
         const res = await apiCall('/friendships/');
         if (!res.ok) {
-          console.error('[FRIENDSHIPS] Failed to load:', res.status);
+          console.error('[FRIENDSHIPS] Ошибка загрузки:', res.status);
           return;
         }
         const data = await res.json();
-        console.log('[FRIENDSHIPS] Loaded:', data.length, 'friendships');
+        console.log('[FRIENDSHIPS] Загружено:', data.length, 'дружбы');
         friendshipsCache = data;
         renderFriends();
       } catch (e) {
-        console.error('[FRIENDSHIPS] Error loading friendships:', e);
+        console.error('[FRIENDSHIPS] Ошибка:', e);
       }
     }
 
     async function addFriend(friendId) {
       try {
-        console.log('[FRIENDS] Attempting to add friend:', friendId);
+        console.log('[FRIENDS] Добавляем друга:', friendId);
         const btn = document.getElementById(`friend-btn-${friendId}`);
         if (btn) {
           btn.disabled = true;
@@ -1271,10 +1271,10 @@
         });
         
         const data = await res.json();
-        console.log('[FRIENDS] Response:', {status: res.status, data});
+        console.log('[FRIENDS] Ответ:', {status: res.status, data});
         
         if (res.ok) {
-          console.log('[FRIENDS] Successfully added friend');
+          console.log('[FRIENDS] Друг добавлен');
           alert('✅ Друг добавлен!');
           await loadFriendships();
           await loadUsers();
@@ -1286,7 +1286,7 @@
           alert('❌ ' + (data.detail || 'Ошибка'));
         }
       } catch (e) {
-        console.error('[FRIENDS] Error:', e);
+        console.error('[FRIENDS] Ошибка:', e);
         const btn = document.getElementById(`friend-btn-${friendId}`);
         if (btn) {
           btn.disabled = false;
@@ -1317,7 +1317,7 @@
       if (!myFriends.length) {
         const empty = document.createElement('div');
         empty.className = 'empty-state';
-        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>У вас пока нет друзей. Добавьте кого‑нибудь во вкладке "Люди".</p>';
+        empty.innerHTML = '<div class="empty-state-icon">👬</div><p>У вас ещё нет друзей. Добавьте друзей во вкладке "Люди"!</p>';
         container.appendChild(empty);
         return;
       }
@@ -1333,7 +1333,7 @@
         const meta = document.createElement('div');
         meta.className = 'user-meta';
         meta.innerHTML = `
-          <div class="user-name">${user.username || 'Без имени'}</div>
+          <div class="user-name">${user.username || 'Пользователь'}</div>
           <div class="user-email">${user.email}</div>
         `;
         main.appendChild(meta);
@@ -1373,12 +1373,12 @@
       const createBtn = document.getElementById('createPostBtn');
       
       if (!title || !content) {
-        alert('❌ Заполните все поля');
+        alert('❌ Заполните оба поля');
         return;
       }
       
       createBtn.disabled = true;
-      console.log('[POST] Creating post with title:', title);
+      console.log('[POST] Создаём пост:', title);
       
       try {
         const response = await apiCall('/posts/', {
@@ -1387,19 +1387,19 @@
         });
         
         const data = await response.json();
-        console.log('[POST] Create response:', {status: response.status, id: data.id, error: data.detail});
+        console.log('[POST] Ответ:', {status: response.status, id: data.id, error: data.detail});
         
         if (response.ok) {
           alert('✅ Пост создан!');
           document.getElementById('createPostForm').reset();
           await loadPosts();
         } else {
-          const msg = data.detail || data.error || 'Неожиданная ошибка';
+          const msg = data.detail || data.error || 'Неизвестная ошибка';
           alert('❌ Ошибка: ' + msg);
-          console.log('[POST] Error details:', data);
+          console.log('[POST] Ошибка:', data);
         }
       } catch (error) {
-        console.error('[POST] Exception:', error);
+        console.error('[POST] Ошибка:', error);
         alert('❌ Ошибка: ' + error.message);
       } finally {
         createBtn.disabled = false;
@@ -1427,17 +1427,17 @@
       }
       
       try {
-        console.log('[COMMENT] Creating comment on post:', postId);
+        console.log('[COMMENT] Создаём комментарий к посту:', postId);
         const response = await apiCall(`/posts/${postId}/comments`, {
           method: 'POST',
           body: JSON.stringify({ content })
         });
         
         const data = await response.json();
-        console.log('[COMMENT] Response:', {status: response.status, data});
+        console.log('[COMMENT] Ответ:', {status: response.status, data});
         
         if (response.ok) {
-          console.log('[COMMENT] Successfully created!');
+          console.log('[COMMENT] Комментарий создан!');
           input.value = '';
           alert('✅ Комментарий добавлен!');
           await loadPostComments(postId);
@@ -1453,7 +1453,7 @@
           alert('❌ ' + (data.detail || 'Ошибка при создании комментария'));
         }
       } catch (e) {
-        console.error('[COMMENT] Error:', e);
+        console.error('[COMMENT] Ошибка:', e);
         alert('❌ Ошибка: ' + e.message);
       }
     }
@@ -1473,12 +1473,12 @@
         
         listEl.innerHTML = comments.map(c => `
           <div class="comment-item">
-            <div class="comment-author">${c.author_username || 'Неизвестный'}</div>
+            <div class="comment-author">${c.author_username || 'Неизвестно'}</div>
             <div class="comment-content">${c.content}</div>
           </div>
         `).join('');
       } catch (e) {
-        console.error('[COMMENT] Error loading comments:', e);
+        console.error('[COMMENT] Ошибка загрузки:', e);
       }
     }
   </script>
