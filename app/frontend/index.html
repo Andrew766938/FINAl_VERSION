@@ -37,13 +37,17 @@
     }
     
     /* ===== AUTH SCREEN ===== */
-    .auth-container {
+    #authScreen {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 20px;
       background: linear-gradient(135deg, var(--bg-dark) 0%, #3d1f5c 100%);
+    }
+    
+    #authScreen.hidden {
+      display: none;
     }
     
     .auth-box {
@@ -238,10 +242,14 @@
     }
     
     /* ===== APP SCREEN ===== */
-    .app-container {
+    #appScreen {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+    
+    #appScreen.hidden {
+      display: none;
     }
     
     .app-header {
@@ -313,10 +321,7 @@
       border-radius: 15px;
       padding: 20px;
       border: 1px solid rgba(168, 85, 247, 0.1);
-    }
-    
-    .create-post-form {
-      margin-bottom: 20px;
+      height: fit-content;
     }
     
     .create-post-form h3 {
@@ -419,6 +424,7 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+      flex: 1;
     }
     
     .post-author {
@@ -579,7 +585,7 @@
 </head>
 <body>
   <!-- AUTH SCREEN -->
-  <div id="authScreen" class="auth-container" style="display: none;">
+  <div id="authScreen">
     <div class="auth-box">
       <div class="auth-header">
         <div class="auth-logo">🌿 Betony</div>
@@ -637,7 +643,7 @@
   </div>
   
   <!-- APP SCREEN -->
-  <div id="appScreen" class="app-container" style="display: none;">
+  <div id="appScreen" class="hidden">
     <div class="app-header">
       <div class="app-logo">🌿 Betony</div>
       <div class="user-section">
