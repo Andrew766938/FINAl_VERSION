@@ -1,8 +1,5 @@
 from sqladmin import Admin, ModelView
-from sqladmin.authentication import AuthenticationBackend
-from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import RedirectResponse
+from sqlalchemy.ext.asyncio import AsyncEngine
 import logging
 
 from app.models.users import UserModel
@@ -15,7 +12,7 @@ from app.models.friendships import FriendshipModel
 logger = logging.getLogger(__name__)
 
 
-class AdminUser(ModelView, model=UserModel):
+class UserAdmin(ModelView, model=UserModel):
     """Admin panel for Users"""
     column_list = [UserModel.id, UserModel.name, UserModel.email, UserModel.is_admin, UserModel.role_id]
     column_searchable_list = [UserModel.name, UserModel.email]
@@ -26,7 +23,7 @@ class AdminUser(ModelView, model=UserModel):
     icon = "fa-solid fa-user"
 
 
-class AdminPost(ModelView, model=PostModel):
+class PostAdmin(ModelView, model=PostModel):
     """Admin panel for Posts"""
     column_list = [PostModel.id, PostModel.title, PostModel.user_id, PostModel.created_at]
     column_searchable_list = [PostModel.title]
@@ -37,7 +34,7 @@ class AdminPost(ModelView, model=PostModel):
     icon = "fa-solid fa-file"
 
 
-class AdminComment(ModelView, model=CommentModel):
+class CommentAdmin(ModelView, model=CommentModel):
     """Admin panel for Comments"""
     column_list = [CommentModel.id, CommentModel.content, CommentModel.user_id, CommentModel.post_id, CommentModel.created_at]
     column_searchable_list = [CommentModel.content]
@@ -48,7 +45,7 @@ class AdminComment(ModelView, model=CommentModel):
     icon = "fa-solid fa-comment"
 
 
-class AdminLike(ModelView, model=LikeModel):
+class LikeAdmin(ModelView, model=LikeModel):
     """Admin panel for Likes"""
     column_list = [LikeModel.id, LikeModel.user_id, LikeModel.post_id, LikeModel.created_at]
     column_sortable_list = [LikeModel.id, LikeModel.created_at]
@@ -58,7 +55,7 @@ class AdminLike(ModelView, model=LikeModel):
     icon = "fa-solid fa-heart"
 
 
-class AdminRole(ModelView, model=RoleModel):
+class RoleAdmin(ModelView, model=RoleModel):
     """Admin panel for Roles"""
     column_list = [RoleModel.id, RoleModel.name, RoleModel.description]
     column_searchable_list = [RoleModel.name]
@@ -68,7 +65,7 @@ class AdminRole(ModelView, model=RoleModel):
     icon = "fa-solid fa-shield"
 
 
-class AdminFriendship(ModelView, model=FriendshipModel):
+class FriendshipAdmin(ModelView, model=FriendshipModel):
     """Admin panel for Friendships"""
     column_list = [FriendshipModel.id, FriendshipModel.user_id, FriendshipModel.friend_id, FriendshipModel.created_at]
     column_sortable_list = [FriendshipModel.id, FriendshipModel.created_at]
@@ -78,7 +75,7 @@ class AdminFriendship(ModelView, model=FriendshipModel):
     icon = "fa-solid fa-handshake"
 
 
-def setup_admin(app: Starlette, engine):
+def setup_admin(app, engine: AsyncEngine):
     """
     Setup SQLAdmin with the FastAPI app
     Access at: http://localhost:8000/admin
@@ -88,19 +85,12 @@ def setup_admin(app: Starlette, engine):
             app,
             engine,
             title="🌿 Betony Admin Panel",
-            logo_url="https://emoji.uc.cn/files/emoji_png/000/000/001/5e4ad01b8de3e.png",
         )
-        
-        # Register model views
-        admin.register_model(AdminUser)
-        admin.register_model(AdminPost)
-        admin.register_model(AdminComment)
-        admin.register_model(AdminLike)
-        admin.register_model(AdminRole)
-        admin.register_model(AdminFriendship)
         
         logger.info("✅ SQLAdmin panel initialized at /admin")
         return admin
     except Exception as e:
         logger.error(f"❌ Error initializing SQLAdmin: {e}")
+        import traceback
+        traceback.print_exc()
         raise
