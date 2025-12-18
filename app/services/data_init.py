@@ -20,7 +20,9 @@ async def init_sample_data():
     """
     Initialize database with sample data
     This includes:
-    - Sample users (including admin)
+    - Test user account
+    - Admin user
+    - Sample users (15)
     - Sample posts
     - Sample likes
     - Sample comments
@@ -53,9 +55,23 @@ async def init_sample_data():
             
             print("[INIT] 🚀 Starting sample data initialization...")
             
-            # Create sample users - expanded to 15 users + 1 admin
+            # Create test user first
             auth_service = AuthService(db)
+            test_user = None
+            try:
+                print(f"[INIT] 🧪 Creating TEST user: Тестовый Пользователь")
+                test_user, token = await auth_service.register_and_login(
+                    email="test@betony.local",
+                    password="test123",
+                    name="Тестовый Пользователь"
+                )
+                print(f"[INIT] ✅ TEST user created: {test_user.name} (ID: {test_user.id})")
+            except Exception as e:
+                print(f"[INIT] ❌ Error creating test user: {e}")
+                import traceback
+                traceback.print_exc()
             
+            # Create sample users - expanded to 15 users + 1 admin
             # ADMIN USER
             admin_user = None
             try:
@@ -276,13 +292,14 @@ async def init_sample_data():
                     print(f"[INIT] ❌ Error creating comment: {e}")
             
             print(f"\n[INIT] ✅ Sample data initialization completed successfully!")
-            print(f"[INIT] Created {len(users)} users + 1 ADMIN")
+            print(f"[INIT] Created {len(users)} users + 1 ADMIN + 1 TEST")
             print(f"[INIT] Created {len(posts)} posts")
             print(f"[INIT] Created {len(like_pairs)} likes")
             print(f"[INIT] Created {len(comments_data)} comments")
             print(f"\n[INIT] 📌 Test credentials:")
+            print(f"[INIT] TEST user    - Email: test@betony.local | Password: test123")
             print(f"[INIT] Regular user - Email: alice@betony.local | Password: password123")
-            print(f"[INIT] ADMIN user - Email: admin@betony.local | Password: admin123")
+            print(f"[INIT] ADMIN user   - Email: admin@betony.local | Password: admin123")
             
     except Exception as e:
         print(f"[INIT] ❌ Error initializing sample data: {e}")
