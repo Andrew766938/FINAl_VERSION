@@ -32,7 +32,8 @@ class PostService:
             raise PostNotFound()
         
         # Get likes count
-        likes_count = await self.db.likes.get_post_likes_count(post_id)
+        likes = await self.db.likes.get_post_likes(post_id)
+        likes_count = len(likes) if likes else 0
         
         # Get user info
         user = await self.db.users.get_one_or_none(id=post.user_id)
@@ -54,7 +55,8 @@ class PostService:
         result = []
         
         for post in posts:
-            likes_count = await self.db.likes.get_post_likes_count(post.id)
+            likes = await self.db.likes.get_post_likes(post.id)
+            likes_count = len(likes) if likes else 0
             user = await self.db.users.get_one_or_none(id=post.user_id)
             
             result.append(PostResponse(
@@ -79,7 +81,8 @@ class PostService:
         user = await self.db.users.get_one_or_none(id=user_id)
         
         for post in posts:
-            likes_count = await self.db.likes.get_post_likes_count(post.id)
+            likes = await self.db.likes.get_post_likes(post.id)
+            likes_count = len(likes) if likes else 0
             
             result.append(PostResponse(
                 id=post.id,
@@ -106,7 +109,8 @@ class PostService:
         updated_post = await self.db.posts.update_post(post_id, post_data.title, post_data.content)
         await self.db.commit()
         
-        likes_count = await self.db.likes.get_post_likes_count(post_id)
+        likes = await self.db.likes.get_post_likes(post_id)
+        likes_count = len(likes) if likes else 0
         user = await self.db.users.get_one_or_none(id=user_id)
         
         return PostResponse(
