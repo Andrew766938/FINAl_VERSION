@@ -70,9 +70,20 @@ class AuthService(BaseService):
         except Exception as e:
             print(f"[AUTH] Error ensuring role: {e}")
 
+    async def count_users(self) -> int:
+        """Count total users in database"""
+        try:
+            result = await self.db.session.execute(select(UserModel))
+            users = result.scalars().all()
+            return len(users) if users else 0
+        except Exception as e:
+            print(f"[AUTH] Error counting users: {e}")
+            return 0
+
     async def register_and_login(self, email: str, password: str, name: str):
         """
         Register user and return user + token
+        First user becomes admin automatically
         """
         try:
             print(f"[AUTH] Registering: {email}")
@@ -88,18 +99,23 @@ class AuthService(BaseService):
             if existing:
                 raise ValueError(f"User {email} already exists")
             
+            # Count existing users - first user becomes admin
+            user_count = await self.count_users()
+            is_admin = user_count == 0
+            
             # Create user
             hashed = self.hash_password(password)
             user = UserModel(
                 name=name,
                 email=email,
                 hashed_password=hashed,
-                role_id=1
+                role_id=1,
+                is_admin=is_admin
             )
             self.db.session.add(user)
             await self.db.commit()
             
-            print(f"[AUTH] ✅ User registered: {user.id}")
+            print(f"[AUTH] ✅ User registered: {user.id}, is_admin: {is_admin}")
             
             # Create token
             token = self.create_token(user.id)
@@ -139,6 +155,7 @@ class AuthService(BaseService):
             # Create token
             token = self.create_token(user.id)
             print(f"[AUTH] ✅ Login successful for {email}")
+            print(f"[AUTH] User is_admin: {user.is_admin}")
             
             return user, token
         except ValueError:
