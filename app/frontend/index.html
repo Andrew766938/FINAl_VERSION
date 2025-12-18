@@ -788,21 +788,6 @@
     let friendshipsCache = [];
     let userLikesCache = new Set();
 
-    // Event delegation for delete buttons
-    document.addEventListener('click', async function(e) {
-      // Delete post
-      if (e.target.classList.contains('delete-post-btn')) {
-        const postId = e.target.dataset.postId;
-        await deletePost(postId);
-      }
-      // Delete comment
-      if (e.target.classList.contains('delete-comment-btn')) {
-        const postId = e.target.dataset.postId;
-        const commentId = e.target.dataset.commentId;
-        await deleteComment(postId, commentId);
-      }
-    });
-
     async function apiCall(endpoint, options = {}) {
       const headers = {
         'Content-Type': 'application/json',
@@ -1088,7 +1073,7 @@
             ${isLiked ? '❤️ Убрать лайк' : '🤍 Поставить лайк'}
           </button>
           <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментировать</button>
-          ${canDelete ? `<button class="btn btn-small btn-danger delete-post-btn" data-post-id="${post.id}">🗑️ Удалить</button>` : ''}
+          ${canDelete ? `<button class="btn btn-small btn-danger" onclick="deletePost(${post.id})">🗑️ Удалить</button>` : ''}
         </div>
         <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
           <div class="comment-form">
@@ -1312,7 +1297,7 @@
         console.log('[FRIENDSHIPS] Загружаем друзей...');
         const res = await apiCall('/friendships/');
         if (!res.ok) {
-          console.error('[FRIENDSHIPS] Ошибка загрузки:', res.status);
+          console.error('[FRIENDSHIPS] Ошибка загружки:', res.status);
           return;
         }
         const data = await res.json();
@@ -1574,7 +1559,7 @@
               <div class="comment-author">${c.author_username || 'Неизвестно'}</div>
               <div class="comment-content">${c.content}</div>
             </div>
-            ${(currentUser.id === c.user_id || currentUser.is_admin) ? `<button class="btn btn-small btn-danger comment-delete-btn delete-comment-btn" data-post-id="${postId}" data-comment-id="${c.id}">🗑️</button>` : ''}
+            ${(currentUser.id === c.user_id || currentUser.is_admin) ? `<button class="btn btn-small btn-danger comment-delete-btn" onclick="deleteComment(${postId}, ${c.id})">🗑️</button>` : ''}
           </div>
         `).join('');
       } catch (e) {
