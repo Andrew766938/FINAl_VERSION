@@ -189,6 +189,31 @@
       border-radius: 4px;
     }
     
+    .guest-notice {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+    
+    .guest-notice strong {
+      color: #3b82f6;
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    .guest-notice ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+    
+    .guest-notice li {
+      margin: 4px 0;
+    }
+    
     .btn {
       padding: 12px 24px;
       border: none;
@@ -220,6 +245,22 @@
     .btn-primary:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+    }
+    
+    .btn-secondary:active:not(:disabled) {
+      transform: translateY(0);
     }
     
     .btn-small {
@@ -267,6 +308,16 @@
     
     #appScreen.hidden {
       display: none;
+    }
+    
+    .guest-banner {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+      border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+      padding: 12px 20px;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #3b82f6;
     }
     
     .app-header {
@@ -798,6 +849,30 @@
       margin: 0;
     }
     
+    .guest-disabled-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-light);
+      font-weight: 600;
+      font-size: 0.9rem;
+      pointer-events: none;
+      z-index: 10;
+    }
+    
+    .sidebar.guest-disabled {
+      position: relative;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    
     /* ===== TABLET (768px - 1024px) ===== */
     @media (max-width: 1024px) {
       .app-main {
@@ -821,6 +896,11 @@
     
     /* ===== MOBILE (< 768px) ===== */
     @media (max-width: 768px) {
+      .guest-banner {
+        padding: 10px 15px;
+        font-size: 0.85rem;
+      }
+      
       .app-header {
         padding: 12px 10px;
         gap: 8px;
@@ -1092,6 +1172,7 @@
         <div class="auth-tabs">
           <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
           <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
+          <button class="auth-tab" onclick="switchAuthTab('guest')">👥 Гость</button>
         </div>
         
         <!-- LOGIN FORM -->
@@ -1135,12 +1216,37 @@
           <div id="regStatus" style="display: none;"></div>
           <button type="submit" class="btn btn-primary" id="regBtn">Зарегистрироваться</button>
         </form>
+        
+        <!-- GUEST FORM -->
+        <div class="auth-form" id="guestForm">
+          <div class="guest-notice">
+            <strong>📌 Гостевой режим</strong>
+            <p style="margin-bottom: 8px;">Вы входите как гость. Доступны только:</p>
+            <ul>
+              <li>✓ Просмотр всех постов</li>
+              <li>✓ Просмотр профилей пользователей</li>
+              <li>✓ Просмотр комментариев</li>
+            </ul>
+            <p style="margin-top: 12px; margin-bottom: 0;">❌ Недоступно:</p>
+            <ul>
+              <li>✗ Создание постов</li>
+              <li>✗ Комментирование</li>
+              <li>✗ Лайки</li>
+              <li>✗ Добавление в друзья</li>
+            </ul>
+          </div>
+          <button type="button" class="btn btn-secondary" onclick="guestLogin()">👥 Войти как гость</button>
+        </div>
       </div>
     </div>
   </div>
   
   <!-- APP SCREEN -->
   <div id="appScreen" class="hidden">
+    <div id="guestBanner" class="guest-banner" style="display: none;">
+      👥 Вы находитесь в гостевом режиме • Некоторые функции недоступны • <a href="#" onclick="logout()" style="color: inherit; text-decoration: underline;">Выйти</a>
+    </div>
+    
     <div class="app-header">
       <div class="app-logo">🌿 Betony</div>
       
@@ -1218,7 +1324,23 @@
   <script src="/static/guest.js"></script>
   <script src="/static/app.js"></script>
   <script>
-    console.log('✅ Betony platform fully loaded - Mobile Ready');
+    function guestLogin() {
+      localStorage.setItem('guestMode', 'true');
+      localStorage.removeItem('token');
+      currentUser = {
+        id: 0,
+        name: 'Гость',
+        email: 'guest@betony.local',
+        is_admin: false
+      };
+      showApp();
+      document.getElementById('guestBanner').style.display = 'block';
+      document.getElementById('sidebarCreate').classList.add('guest-disabled');
+      document.getElementById('sidebarCreate').style.opacity = '0.5';
+      document.getElementById('sidebarCreate').style.pointerEvents = 'none';
+    }
+    
+    console.log('✅ Betony platform fully loaded - Mobile Ready + Guest Mode');
   </script>
 </body>
 </html>
