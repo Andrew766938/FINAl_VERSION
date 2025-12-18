@@ -125,12 +125,14 @@ class PostService:
             likes_count=likes_count
         )
 
-    async def delete_post(self, post_id: int, user_id: int) -> bool:
+    async def delete_post(self, post_id: int, user_id: int, is_admin: bool = False) -> bool:
+        """Delete a post. Only author or admin can delete."""
         post = await self.db.posts.get_post_by_id(post_id)
         if not post:
             raise PostNotFound()
         
-        if post.user_id != user_id:
+        # Allow deletion if user is author OR if user is admin
+        if post.user_id != user_id and not is_admin:
             raise Forbidden()
         
         success = await self.db.posts.delete_post_by_id(post_id)
