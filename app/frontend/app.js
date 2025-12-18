@@ -4,37 +4,44 @@ let authToken = localStorage.getItem('authToken');
 let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
 const API_URL = 'http://localhost:8000';
 
-// Initialize app
+console.log('[APP] Initializing... Token:', authToken ? 'Present' : 'Missing', 'User:', currentUser);
+
+// Initialize app on page load
 window.addEventListener('DOMContentLoaded', async () => {
-  if (!authToken) {
-    // Show auth screen
-    document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('appScreen').style.display = 'none';
+  console.log('[APP] Page loaded');
+  
+  if (!authToken || !currentUser) {
+    console.log('[APP] No auth, showing auth screen');
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
   } else {
-    // Show app
-    document.getElementById('authScreen').style.display = 'none';
-    document.getElementById('appScreen').style.display = 'block';
-    initializeApp();
+    console.log('[APP] Auth found, showing app');
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
+    await initializeApp();
   }
 });
 
 // Initialize main app
 async function initializeApp() {
-  console.log('[APP] Initializing...');
+  console.log('[APP] Initializing app...');
   
   // Set user info
   if (currentUser) {
-    document.getElementById('currentUserName').textContent = currentUser.username || currentUser.email;
-    const avatar = (currentUser.username || currentUser.email || '?').substring(0, 2).toUpperCase();
+    const displayName = currentUser.username || currentUser.name || currentUser.email || 'Пользователь';
+    document.getElementById('currentUserName').textContent = displayName;
+    const avatar = displayName.substring(0, 2).toUpperCase();
     document.getElementById('userAvatar').textContent = avatar;
   }
   
   // Load posts
+  console.log('[APP] Loading posts...');
   await loadPosts();
 }
 
 // Logout
 function logout() {
+  console.log('[APP] Logging out...');
   localStorage.removeItem('authToken');
   localStorage.removeItem('currentUser');
   authToken = null;
@@ -52,9 +59,14 @@ async function loadPosts() {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
-    if (!response.ok) throw new Error('Failed to load posts');
+    if (!response.ok) {
+      console.error('[POSTS] Error:', response.status);
+      throw new Error('Failed to load posts');
+    }
     
     const posts = await response.json();
+    console.log('[POSTS] Got', posts.length, 'posts');
+    
     const container = document.getElementById('postsContainer');
     container.innerHTML = '';
     
@@ -68,6 +80,7 @@ async function loadPosts() {
     }
   } catch (error) {
     console.error('[POSTS] Error loading posts:', error);
+    document.getElementById('postsContainer').innerHTML = '<div class="empty-state"><p>❌ Ошибка загрузки постов</p></div>';
   }
 }
 
@@ -77,7 +90,7 @@ async function renderPost(post, container) {
   el.className = 'post';
   el.id = `post-${post.id}`;
   
-  const authorName = post.author_name || 'Автор';
+  const authorName = post.author_name || post.author_username || 'Автор';
   const authorEmail = post.author_email || 'user';
   const avatarText = (authorName || '?').substring(0, 2).toUpperCase();
   
@@ -91,7 +104,9 @@ async function renderPost(post, container) {
       likesCount = Array.isArray(likes) ? likes.length : 0;
       liked = likes.some(l => l.user_id === currentUser.id);
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[POSTS] Error loading likes:', e);
+  }
   
   // Get comments count
   let commentsCount = 0;
@@ -101,7 +116,9 @@ async function renderPost(post, container) {
       const comments = await commentsRes.json();
       commentsCount = Array.isArray(comments) ? comments.length : 0;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('[POSTS] Error loading comments:', e);
+  }
   
   const isAuthor = currentUser.id === post.user_id;
   
@@ -127,7 +144,7 @@ async function renderPost(post, container) {
     
     <div class="post-actions">
       <button class="btn btn-small btn-action" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">
-        ${liked ? '❤️ Понравилось' : '🤍 Лайк'}
+        ${liked ? '❤️ Нравится' : '🤍 Лайк'}
       </button>
       <button class="btn btn-small btn-action" onclick="toggleComments(${post.id})">💬 Комментарии</button>
     </div>
@@ -204,6 +221,7 @@ async function addComment(postId) {
   }
   
   try {
+    console.log('[COMMENTS] Adding comment to post', postId);
     const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
       method: 'POST',
       headers: {
@@ -213,8 +231,12 @@ async function addComment(postId) {
       body: JSON.stringify({ content })
     });
     
-    if (!response.ok) throw new Error('Failed to add comment');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to add comment');
+    }
     
+    console.log('[COMMENTS] Comment added successfully');
     input.value = '';
     await loadComments(postId);
     
@@ -226,7 +248,7 @@ async function addComment(postId) {
     }
   } catch (error) {
     console.error('[COMMENTS] Error adding comment:', error);
-    alert('Ошибка при добавлении комментария');
+    alert('Ошибка: ' + error.message);
   }
 }
 
@@ -235,6 +257,7 @@ async function deleteComment(postId, commentId) {
   if (!confirm('Удалить комментарий?')) return;
   
   try {
+    console.log('[COMMENTS] Deleting comment', commentId);
     const response = await fetch(`${API_URL}/posts/${postId}/comments/${commentId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${authToken}` }
@@ -242,6 +265,7 @@ async function deleteComment(postId, commentId) {
     
     if (!response.ok) throw new Error('Failed to delete comment');
     
+    console.log('[COMMENTS] Comment deleted');
     document.getElementById(`comment-${commentId}`).remove();
     
     // Update comments count
@@ -261,8 +285,9 @@ async function deleteComment(postId, commentId) {
 // Toggle like
 async function toggleLike(postId) {
   try {
+    console.log('[LIKES] Toggling like for post', postId);
     const btn = document.getElementById(`like-btn-${postId}`);
-    const isLiked = btn.textContent.includes('Понравилось');
+    const isLiked = btn.textContent.includes('Нравится');
     
     const method = isLiked ? 'DELETE' : 'POST';
     const response = await fetch(`${API_URL}/posts/${postId}/like`, {
@@ -272,12 +297,14 @@ async function toggleLike(postId) {
     
     if (!response.ok) throw new Error('Failed to toggle like');
     
+    console.log('[LIKES] Like toggled');
+    
     // Update button and count
     if (isLiked) {
       btn.textContent = '🤍 Лайк';
       btn.classList.remove('liked');
     } else {
-      btn.textContent = '❤️ Понравилось';
+      btn.textContent = '❤️ Нравится';
       btn.classList.add('liked');
     }
     
@@ -305,6 +332,7 @@ async function createPost() {
   }
   
   try {
+    console.log('[POSTS] Creating new post');
     const response = await fetch(`${API_URL}/posts/`, {
       method: 'POST',
       headers: {
@@ -318,6 +346,8 @@ async function createPost() {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to create post');
     }
+    
+    console.log('[POSTS] Post created successfully');
     
     // Clear form
     document.getElementById('postTitle').value = '';
@@ -336,6 +366,7 @@ async function deletePost(postId) {
   if (!confirm('Удалить пост?')) return;
   
   try {
+    console.log('[POSTS] Deleting post', postId);
     const response = await fetch(`${API_URL}/posts/${postId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${authToken}` }
@@ -343,6 +374,7 @@ async function deletePost(postId) {
     
     if (!response.ok) throw new Error('Failed to delete post');
     
+    console.log('[POSTS] Post deleted');
     document.getElementById(`post-${postId}`).remove();
   } catch (error) {
     console.error('[POSTS] Error deleting post:', error);
