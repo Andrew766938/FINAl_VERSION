@@ -49,6 +49,7 @@ async def register_user(
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
+                "is_admin": user.is_admin or False,
             }
         }
     except ValueError as e:
@@ -93,6 +94,7 @@ async def login_user(
         user, token = await service.login(data.email, data.password)
         
         print(f"[API] ✅ Login successful for {user.email}")
+        print(f"[API] User is_admin: {user.is_admin}")
         # Set cookie as backup
         response.set_cookie("access_token", token, httponly=True, max_age=1800)
         
@@ -102,6 +104,7 @@ async def login_user(
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
+                "is_admin": user.is_admin or False,
             }
         }
     except ValueError as e:
@@ -130,6 +133,7 @@ async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user))
             "id": current_user.id,
             "username": current_user.name,
             "email": current_user.email,
+            "is_admin": current_user.is_admin or False,
         }
     except Exception as e:
         print(f"[API] ❌ Get me error: {e}")
@@ -155,6 +159,7 @@ async def get_user(db: DBDep, user_id: int) -> dict:
             "id": user.id,
             "username": user.name,
             "email": user.email,
+            "is_admin": user.is_admin or False,
         }
     except HTTPException:
         raise
@@ -178,6 +183,7 @@ async def get_all_users(db: DBDep) -> list:
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
+                "is_admin": user.is_admin or False,
             }
             for user in (users or [])
         ]
