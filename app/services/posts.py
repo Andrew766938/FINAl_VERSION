@@ -8,7 +8,8 @@ class PostService:
         self.db = db
 
     async def create_post(self, post_data: PostCreate, user_id: int) -> PostResponse:
-        post = await self.db.posts.create_post(user_id, post_data.title, post_data.content)
+        # Fix: pass post_data and user_id to repository
+        post = await self.db.posts.create_post(post_data, user_id)
         await self.db.commit()
         
         # Get user info for author fields
@@ -106,7 +107,7 @@ class PostService:
         if post.user_id != user_id:
             raise Forbidden()
         
-        updated_post = await self.db.posts.update_post(post_id, post_data.title, post_data.content)
+        updated_post = await self.db.posts.update_post(post_id, post_data)
         await self.db.commit()
         
         likes = await self.db.likes.get_post_likes(post_id)
@@ -135,7 +136,7 @@ class PostService:
         if post.user_id != user_id and not is_admin:
             raise Forbidden()
         
-        success = await self.db.posts.delete_post_by_id(post_id)
+        success = await self.db.posts.delete_post(post_id)
         if not success:
             raise PostNotFound()
         
