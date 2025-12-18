@@ -419,3 +419,12 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// Export functions to global scope for inline onclick handlers
+window.createPost = createPost;
+window.toggleLike = toggleLike;
+window.toggleComments = toggleComments;
+window.addComment = addComment;
+window.deletePost = deletePost;
+window.deleteComment = deleteComment;
+window.logout = logout;
