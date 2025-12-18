@@ -2,16 +2,25 @@
 name = "individual-project-template"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = [
-    "aiosqlite>=0.21.0",
-    "alembic>=1.17.1",
-    "bcrypt>=4.0.1",
-    "black>=25.9.0",
-    "fastapi[all]>=0.120.4",
-    "passlib[bcrypt]>=2.4.2",
-    "pydantic[email]>=2.12.3",
-    "pyjwt>=2.10.1",
-    "sqladmin>=0.21.0",
-    "sqlalchemy>=2.0.44",
+    "fastapi==0.120.4",
+    "uvicorn[standard]==0.38.0",
+    "sqlalchemy==2.0.44",
+    "aiosqlite==0.21.0",
+    "alembic==1.17.1",
+    "sqladmin==0.21.0",
+    "WTForms==3.1.1",
+    "Werkzeug==3.0.1",
+    "pydantic==2.12.3",
+    "pydantic-settings==2.11.0",
+    "email-validator==2.3.0",
+    "bcrypt==4.0.1",
+    "pyjwt==2.10.1",
+    "passlib[bcrypt]==2.4.2",
+    "python-multipart==0.0.20",
+    "python-dotenv==1.2.1",
+    "click==8.3.0",
+    "httptools==0.7.1",
+    "watchfiles==1.1.1",
 ]
