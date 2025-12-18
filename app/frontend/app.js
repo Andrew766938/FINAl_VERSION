@@ -1,202 +1,201 @@
-// Main App JavaScript - Betony Blog Platform
-
 const API_URL = 'http://localhost:8000';
+let currentUser = null;
+let currentTab = 'feed';
 
-// Global state
-let authToken = localStorage.getItem('authToken');
-let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+// ===== AUTH FUNCTIONS =====
 
-console.log('='.repeat(60));
-console.log('[APP] Betony Frontend Loaded');
-console.log('[APP] Auth Token:', authToken ? '✅ Present' : '❌ Missing');
-console.log('[APP] Current User:', currentUser ? `✅ ${currentUser.email}` : '❌ None');
-console.log('='.repeat(60));
-
-// Initialize on page load
-window.addEventListener('DOMContentLoaded', async () => {
-  console.log('[APP] DOM Loaded - Checking auth state');
+async function handleLogin(event) {
+  event.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const status = document.getElementById('loginStatus');
   
-  const authScreen = document.getElementById('authScreen');
-  const appScreen = document.getElementById('appScreen');
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.className = 'form-loading';
+  status.textContent = '⏳ Ополняю логин...';
   
-  if (!authToken || !currentUser) {
-    console.log('[APP] No auth - Showing login screen');
-    authScreen.classList.remove('hidden');
-    appScreen.classList.add('hidden');
-  } else {
-    console.log('[APP] Auth found - Showing app');
-    authScreen.classList.add('hidden');
-    appScreen.classList.remove('hidden');
-    await initializeApp();
-  }
-});
-
-// Initialize the app after login
-async function initializeApp() {
-  console.log('[APP] Initializing application...');
-  
-  // Set user display info
-  if (currentUser) {
-    const displayName = currentUser.username || currentUser.name || currentUser.email || 'User';
-    document.getElementById('currentUserName').textContent = displayName;
-    const avatar = displayName.substring(0, 2).toUpperCase();
-    document.getElementById('userAvatar').textContent = avatar;
-    console.log('[APP] User display set:', displayName);
-  }
-  
-  // Load posts
-  console.log('[APP] Loading posts...');
-  await loadPosts();
-}
-
-// Logout function
-function logout() {
-  console.log('[APP] User logging out...');
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('currentUser');
-  authToken = null;
-  currentUser = null;
-  location.reload();
-}
-
-// ===== POSTS MANAGEMENT =====
-
-// Load all posts
-async function loadPosts() {
   try {
-    console.log('[POSTS] Fetching all posts...');
-    
-    const response = await fetch(`${API_URL}/posts/`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
     });
     
-    console.log('[POSTS] Response status:', response.status);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    if (response.ok) {
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      currentUser = data.user;
+      showApp();
+    } else {
+      const error = await response.json();
+      status.className = 'form-error';
+      status.textContent = `❌ Ошибка: ${error.detail}`;
     }
-    
-    const posts = await response.json();
-    console.log('[POSTS] Received', Array.isArray(posts) ? posts.length : 0, 'posts');
-    
-    const container = document.getElementById('postsContainer');
-    container.innerHTML = '';
-    
-    if (!Array.isArray(posts) || posts.length === 0) {
-      console.log('[POSTS] No posts to display');
-      container.innerHTML = '<div class="empty-state"><p>📝 Пока нет постов. Создайте первый!</p></div>';
-      return;
-    }
-    
-    console.log('[POSTS] Rendering', posts.length, 'posts');
-    for (const post of posts) {
-      await renderPost(post, container);
-    }
-    console.log('[POSTS] ✅ All posts rendered');
-  } catch (error) {
-    console.error('[POSTS] Error loading posts:', error);
-    const container = document.getElementById('postsContainer');
-    container.innerHTML = `<div class="empty-state"><p>❌ Ошибка: ${error.message}</p></div>`;
+  } catch (err) {
+    status.className = 'form-error';
+    status.textContent = `❌ Ошибка: ${err.message}`;
+  } finally {
+    btn.disabled = false;
   }
 }
 
-// Render a single post
-async function renderPost(post, container) {
+async function handleRegister(event) {
+  event.preventDefault();
+  const name = document.getElementById('regUsername').value;
+  const email = document.getElementById('regEmail').value;
+  const password = document.getElementById('regPassword').value;
+  const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+  const btn = document.getElementById('regBtn');
+  const status = document.getElementById('regStatus');
+  
+  if (password !== passwordConfirm) {
+    status.style.display = 'block';
+    status.className = 'form-error';
+    status.textContent = '❌ Пароли не совпадают';
+    return;
+  }
+  
+  btn.disabled = true;
+  status.style.display = 'block';
+  status.className = 'form-loading';
+  status.textContent = '⏳ Ополняю регистрацию...';
+  
   try {
-    const el = document.createElement('div');
-    el.className = 'post';
-    el.id = `post-${post.id}`;
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    });
     
-    const authorName = post.author_name || post.author_username || 'Unknown';
-    const authorEmail = post.author_email || 'user';
-    const avatarText = (authorName || '?').substring(0, 2).toUpperCase();
-    
-    // Get likes count
-    let likesCount = 0;
-    let liked = false;
-    try {
-      const likesRes = await fetch(`${API_URL}/posts/${post.id}/likes`);
-      if (likesRes.ok) {
-        const likes = await likesRes.json();
-        likesCount = Array.isArray(likes) ? likes.length : 0;
-        liked = likes.some(l => l.user_id === currentUser.id);
-      }
-    } catch (e) {
-      console.warn('[POSTS] Could not load likes count:', e);
+    if (response.ok) {
+      const data = await response.json();
+      localStorage.setItem('token', data.access_token);
+      currentUser = data.user;
+      showApp();
+    } else {
+      const error = await response.json();
+      status.className = 'form-error';
+      status.textContent = `❌ Ошибка: ${error.detail}`;
     }
-    
-    // Get comments count
-    let commentsCount = 0;
-    try {
-      const commentsRes = await fetch(`${API_URL}/posts/${post.id}/comments`);
-      if (commentsRes.ok) {
-        const comments = await commentsRes.json();
-        commentsCount = Array.isArray(comments) ? comments.length : 0;
-      }
-    } catch (e) {
-      console.warn('[POSTS] Could not load comments count:', e);
-    }
-    
-    const isAuthor = currentUser.id === post.user_id;
-    const createdDate = new Date(post.created_at).toLocaleString('ru-RU');
-    
-    el.innerHTML = `
-      <div class="post-header">
-        <div class="post-avatar">${avatarText}</div>
-        <div class="post-info" style="flex: 1;">
-          <div class="post-author">${authorName}${post.is_admin ? ' 👑' : ''}</div>
-          <div class="post-meta">@${authorEmail} • ${createdDate}</div>
-        </div>
-        ${isAuthor ? `<button class="btn-icon" onclick="deletePost(${post.id})" title="Удалить пост">🗑️</button>` : ''}
-      </div>
-      
-      <div class="post-content">
-        <h3>${escapeHtml(post.title)}</h3>
-        <p>${escapeHtml(post.content)}</p>
-      </div>
-      
-      <div class="post-stats">
-        <span id="likes-count-${post.id}">❤️ ${likesCount}</span>
-        <span id="comments-count-${post.id}">💬 ${commentsCount}</span>
-      </div>
-      
-      <div class="post-actions">
-        <button class="btn btn-small btn-action" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">
-          ${liked ? '❤️ Нравится' : '🤍 Лайк'}
-        </button>
-        <button class="btn btn-small btn-action" onclick="toggleComments(${post.id})">💬 Комментарии</button>
-      </div>
-      
-      <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
-        <div id="comments-list-${post.id}" class="comments-list"></div>
-        <div class="comment-form">
-          <input type="text" id="comment-input-${post.id}" placeholder="Добавьте комментарий..." class="comment-input">
-          <button class="btn btn-small btn-primary" onclick="addComment(${post.id})">Отправить</button>
-        </div>
-      </div>
-    `;
-    
-    container.appendChild(el);
-  } catch (error) {
-    console.error('[POSTS] Error rendering post:', error);
+  } catch (err) {
+    status.className = 'form-error';
+    status.textContent = `❌ Ошибка: ${err.message}`;
+  } finally {
+    btn.disabled = false;
   }
 }
 
-// Create new post
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  
+  event.target.classList.add('active');
+  document.getElementById(`${tab}Form`).classList.add('active');
+}
+
+function logout() {
+  localStorage.removeItem('token');
+  currentUser = null;
+  showAuth();
+}
+
+// ===== TAB SWITCHING =====
+
+function switchTab(tab) {
+  currentTab = tab;
+  
+  // Update nav tabs
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Show/hide sidebar
+  const sidebar = document.getElementById('sidebarCreate');
+  if (tab === 'feed') {
+    sidebar.classList.remove('hidden');
+  } else {
+    sidebar.classList.add('hidden');
+  }
+  
+  // Show/hide tab containers
+  document.getElementById('feedTab').classList.add('hidden');
+  document.getElementById('favoritesTab').classList.add('hidden');
+  document.getElementById('friendsTab').classList.add('hidden');
+  document.getElementById('accountTab').classList.add('hidden');
+  
+  if (tab === 'feed') {
+    document.getElementById('feedTab').classList.remove('hidden');
+    loadFeed();
+  } else if (tab === 'favorites') {
+    document.getElementById('favoritesTab').classList.remove('hidden');
+    loadFavorites();
+  } else if (tab === 'friends') {
+    document.getElementById('friendsTab').classList.remove('hidden');
+    loadFriends();
+  } else if (tab === 'account') {
+    document.getElementById('accountTab').classList.remove('hidden');
+    loadAccount();
+  }
+}
+
+// ===== APP INITIALIZATION =====
+
+function showAuth() {
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('appScreen').classList.add('hidden');
+}
+
+function showApp() {
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  updateUserDisplay();
+  loadFeed();
+}
+
+function updateUserDisplay() {
+  if (currentUser) {
+    document.getElementById('currentUserName').textContent = currentUser.username || currentUser.name;
+    const firstLetter = (currentUser.username || currentUser.name).charAt(0).toUpperCase();
+    document.getElementById('userAvatar').textContent = firstLetter;
+  }
+}
+
+// ===== FEED TAB =====
+
+async function loadFeed() {
+  const container = document.getElementById('feedTab');
+  container.innerHTML = '<div class="empty-state"><p>📝 Загружаю посты...</p></div>';
+  
+  try {
+    const response = await fetch(`${API_URL}/posts/`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      const posts = await response.json();
+      if (posts.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>📝 Нет постов</p></div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      for (const post of posts) {
+        const postEl = createPostElement(post);
+        container.appendChild(postEl);
+      }
+    }
+  } catch (err) {
+    console.error('Error loading feed:', err);
+  }
+}
+
 async function createPost() {
   const title = document.getElementById('postTitle').value.trim();
   const content = document.getElementById('postContent').value.trim();
   
-  console.log('[POSTS] Creating new post...');
-  console.log('[POSTS] Title:', title ? 'OK' : 'EMPTY');
-  console.log('[POSTS] Content:', content ? 'OK' : 'EMPTY');
-  
   if (!title || !content) {
-    alert('Заполните название и содержание');
+    alert('⚠️ Пополните все поля');
     return;
   }
   
@@ -205,144 +204,130 @@ async function createPost() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({ title, content })
     });
     
-    console.log('[POSTS] Create response status:', response.status);
-    
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Ошибка создания поста');
+    if (response.ok) {
+      document.getElementById('postTitle').value = '';
+      document.getElementById('postContent').value = '';
+      loadFeed();
+    } else {
+      alert('❌ Ошибка при сохранении поста');
     }
-    
-    const newPost = await response.json();
-    console.log('[POSTS] ✅ Post created with ID:', newPost.id);
-    
-    // Clear form
-    document.getElementById('postTitle').value = '';
-    document.getElementById('postContent').value = '';
-    
-    // Reload posts
-    await loadPosts();
-  } catch (error) {
-    console.error('[POSTS] Error creating post:', error);
-    alert('Ошибка: ' + error.message);
+  } catch (err) {
+    console.error('Error creating post:', err);
   }
 }
 
-// Delete post
+function createPostElement(post) {
+  const div = document.createElement('div');
+  div.className = 'post';
+  
+  const firstLetter = (post.author_name || 'U').charAt(0).toUpperCase();
+  const date = new Date(post.created_at).toLocaleDateString('ru-RU');
+  
+  div.innerHTML = `
+    <div class="post-header">
+      <div class="post-avatar">${firstLetter}</div>
+      <div class="post-info">
+        <div class="post-author">${post.author_name}</div>
+        <div class="post-meta">${date}</div>
+      </div>
+      ${currentUser?.is_admin || currentUser?.id === post.user_id ? `
+        <button class="btn-icon" onclick="deletePost(${post.id})" title="Удалить">🗑️</button>
+      ` : ''}
+    </div>
+    <div class="post-content">
+      <h3>${post.title}</h3>
+      <p>${post.content}</p>
+    </div>
+    <div class="post-stats">
+      <span>❤️ ${post.likes_count || 0} лайков</span>
+    </div>
+    <div class="post-actions">
+      <button class="btn-action" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">❤️ Нравится</button>
+      <button class="btn-action" onclick="toggleComments(${post.id})">💬 Комментарии</button>
+    </div>
+    <div class="comments-section" id="comments-${post.id}" style="display:none;">
+      <div class="comments-list" id="comments-list-${post.id}"></div>
+      <div class="comment-form">
+        <input type="text" class="comment-input" placeholder="Напишите комментарий..." id="comment-input-${post.id}">
+        <button class="btn-action" onclick="addComment(${post.id})">Отправить</button>
+      </div>
+    </div>
+  `;
+  
+  return div;
+}
+
 async function deletePost(postId) {
-  if (!confirm('Удалить пост?')) return;
+  if (!confirm('Вы уверены?')) return;
   
   try {
-    console.log('[POSTS] Deleting post', postId);
-    
     const response = await fetch(`${API_URL}/posts/${postId}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${authToken}` }
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     
-    console.log('[POSTS] Delete response status:', response.status);
-    
-    if (!response.ok) throw new Error('Ошибка удаления');
-    
-    console.log('[POSTS] ✅ Post deleted');
-    document.getElementById(`post-${postId}`).remove();
-  } catch (error) {
-    console.error('[POSTS] Error deleting post:', error);
-    alert('Ошибка при удалении поста');
+    if (response.ok) {
+      loadFeed();
+    }
+  } catch (err) {
+    console.error('Error deleting post:', err);
   }
 }
 
-// ===== LIKES MANAGEMENT =====
-
-async function toggleLike(postId) {
-  try {
-    console.log('[LIKES] Toggling like for post', postId);
-    
-    const btn = document.getElementById(`like-btn-${postId}`);
-    const isLiked = btn.textContent.includes('Нравится');
-    
-    const method = isLiked ? 'DELETE' : 'POST';
-    const response = await fetch(`${API_URL}/posts/${postId}/like`, {
-      method,
-      headers: { 'Authorization': `Bearer ${authToken}` }
-    });
-    
-    if (!response.ok) throw new Error('Ошибка лайка');
-    
-    console.log('[LIKES] ✅ Like toggled');
-    
-    // Update button
-    if (isLiked) {
-      btn.textContent = '🤍 Лайк';
-      btn.classList.remove('liked');
-    } else {
-      btn.textContent = '❤️ Нравится';
-      btn.classList.add('liked');
-    }
-    
-    // Update likes count
-    const likesRes = await fetch(`${API_URL}/posts/${postId}/likes`);
-    if (likesRes.ok) {
-      const likes = await likesRes.json();
-      document.getElementById(`likes-count-${postId}`).textContent = `❤️ ${likes.length || 0}`;
-    }
-  } catch (error) {
-    console.error('[LIKES] Error:', error);
-    alert('Ошибка при лайке поста');
-  }
-}
-
-// ===== COMMENTS MANAGEMENT =====
-
-async function toggleComments(postId) {
-  const section = document.getElementById(`comments-section-${postId}`);
-  if (section.style.display === 'none') {
-    section.style.display = 'block';
-    await loadComments(postId);
-  } else {
-    section.style.display = 'none';
+function toggleComments(postId) {
+  const section = document.getElementById(`comments-${postId}`);
+  const isHidden = section.style.display === 'none';
+  section.style.display = isHidden ? 'block' : 'none';
+  
+  if (isHidden) {
+    loadComments(postId);
   }
 }
 
 async function loadComments(postId) {
+  const list = document.getElementById(`comments-list-${postId}`);
+  list.innerHTML = '<p style="text-align:center; color: var(--text-muted);">💬 Загружаю комментарии...</p>';
+  
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}/comments`);
-    if (!response.ok) throw new Error('Ошибка загрузки');
+    const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
     
-    const comments = await response.json();
-    const listEl = document.getElementById(`comments-list-${postId}`);
-    listEl.innerHTML = '';
-    
-    if (!Array.isArray(comments) || comments.length === 0) {
-      listEl.innerHTML = '<div class="empty-state"><p>Нет комментариев</p></div>';
-      return;
+    if (response.ok) {
+      const comments = await response.json();
+      list.innerHTML = '';
+      
+      if (comments.length === 0) {
+        list.innerHTML = '<p style="text-align:center; color: var(--text-muted);">😶 Нет комментариев</p>';
+        return;
+      }
+      
+      for (const comment of comments) {
+        const commentEl = document.createElement('div');
+        commentEl.className = 'comment';
+        const date = new Date(comment.created_at).toLocaleDateString('ru-RU');
+        
+        commentEl.innerHTML = `
+          <div class="comment-header">
+            <span class="comment-author">${comment.author_username}</span>
+            <span class="comment-date">${date}</span>
+            ${currentUser?.is_admin || currentUser?.id === comment.user_id ? `
+              <button class="btn-icon" onclick="deleteComment(${comment.post_id}, ${comment.id})" title="Удалить">🗑️</button>
+            ` : ''}
+          </div>
+          <div class="comment-content">${comment.content}</div>
+        `;
+        
+        list.appendChild(commentEl);
+      }
     }
-    
-    for (const comment of comments) {
-      const commentEl = document.createElement('div');
-      commentEl.className = 'comment';
-      commentEl.id = `comment-${comment.id}`;
-      
-      const isAuthor = currentUser.id === comment.user_id;
-      const createdDate = new Date(comment.created_at).toLocaleString('ru-RU');
-      
-      commentEl.innerHTML = `
-        <div class="comment-header">
-          <div class="comment-author">${comment.author_username}</div>
-          <div class="comment-date">${createdDate}</div>
-          ${isAuthor ? `<button class="btn-icon" onclick="deleteComment(${postId}, ${comment.id})">🗑️</button>` : ''}
-        </div>
-        <div class="comment-content">${escapeHtml(comment.content)}</div>
-      `;
-      
-      listEl.appendChild(commentEl);
-    }
-  } catch (error) {
-    console.error('[COMMENTS] Error loading:', error);
+  } catch (err) {
+    console.error('Error loading comments:', err);
   }
 }
 
@@ -350,38 +335,24 @@ async function addComment(postId) {
   const input = document.getElementById(`comment-input-${postId}`);
   const content = input.value.trim();
   
-  if (!content) {
-    alert('Введите комментарий');
-    return;
-  }
+  if (!content) return;
   
   try {
-    console.log('[COMMENTS] Adding comment to post', postId);
-    
     const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authToken}`
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({ content })
     });
     
-    if (!response.ok) throw new Error('Ошибка добавления');
-    
-    console.log('[COMMENTS] ✅ Comment added');
-    input.value = '';
-    await loadComments(postId);
-    
-    // Update comments count
-    const commentsRes = await fetch(`${API_URL}/posts/${postId}/comments`);
-    if (commentsRes.ok) {
-      const comments = await commentsRes.json();
-      document.getElementById(`comments-count-${postId}`).textContent = `💬 ${comments.length || 0}`;
+    if (response.ok) {
+      input.value = '';
+      loadComments(postId);
     }
-  } catch (error) {
-    console.error('[COMMENTS] Error adding:', error);
-    alert('Ошибка: ' + error.message);
+  } catch (err) {
+    console.error('Error adding comment:', err);
   }
 }
 
@@ -389,42 +360,195 @@ async function deleteComment(postId, commentId) {
   if (!confirm('Удалить комментарий?')) return;
   
   try {
-    console.log('[COMMENTS] Deleting comment', commentId);
-    
     const response = await fetch(`${API_URL}/posts/${postId}/comments/${commentId}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${authToken}` }
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     
-    if (!response.ok) throw new Error('Ошибка удаления');
-    
-    console.log('[COMMENTS] ✅ Comment deleted');
-    document.getElementById(`comment-${commentId}`).remove();
-    
-    // Update comments count
-    const commentsRes = await fetch(`${API_URL}/posts/${postId}/comments`);
-    if (commentsRes.ok) {
-      const comments = await commentsRes.json();
-      document.getElementById(`comments-count-${postId}`).textContent = `💬 ${comments.length || 0}`;
+    if (response.ok) {
+      loadComments(postId);
     }
-  } catch (error) {
-    console.error('[COMMENTS] Error deleting:', error);
-    alert('Ошибка при удалении комментария');
+  } catch (err) {
+    console.error('Error deleting comment:', err);
   }
 }
 
-// Utility: Escape HTML
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+async function toggleLike(postId) {
+  try {
+    const btn = document.getElementById(`like-btn-${postId}`);
+    const isLiked = btn.classList.contains('liked');
+    
+    const response = await fetch(`${API_URL}/posts/${postId}/like`, {
+      method: isLiked ? 'DELETE' : 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      btn.classList.toggle('liked');
+      loadFeed();
+    }
+  } catch (err) {
+    console.error('Error toggling like:', err);
+  }
 }
 
-// Export functions to global scope for inline onclick handlers
-window.createPost = createPost;
-window.toggleLike = toggleLike;
-window.toggleComments = toggleComments;
-window.addComment = addComment;
-window.deletePost = deletePost;
-window.deleteComment = deleteComment;
-window.logout = logout;
+// ===== FAVORITES TAB =====
+
+async function loadFavorites() {
+  const container = document.getElementById('favoritesTab');
+  container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю избранное...</p></div>';
+  
+  try {
+    const response = await fetch(`${API_URL}/posts/`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      const allPosts = await response.json();
+      
+      // Get all likes for current user
+      let favoredPosts = [];
+      for (const post of allPosts) {
+        const likesResponse = await fetch(`${API_URL}/posts/${post.id}/likes`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (likesResponse.ok) {
+          const likes = await likesResponse.json();
+          const userLiked = likes.some(like => like.user_id === currentUser.id);
+          if (userLiked) {
+            favoredPosts.push(post);
+          }
+        }
+      }
+      
+      if (favoredPosts.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>⭐ Нет избранных постов</p></div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      for (const post of favoredPosts) {
+        const postEl = createPostElement(post);
+        container.appendChild(postEl);
+      }
+    }
+  } catch (err) {
+    console.error('Error loading favorites:', err);
+    container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке</p></div>';
+  }
+}
+
+// ===== FRIENDS TAB =====
+
+async function loadFriends() {
+  const container = document.getElementById('friendsTab');
+  container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю друзей...</p></div>';
+  
+  try {
+    const response = await fetch(`${API_URL}/auth/friends`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      const friends = await response.json();
+      
+      if (friends.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>👥 Нет друзей</p></div>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      for (const friend of friends) {
+        const friendEl = document.createElement('div');
+        friendEl.className = 'friend-card';
+        friendEl.innerHTML = `
+          <div class="friend-info">
+            <div class="friend-name">${friend.name}</div>
+            <div class="friend-email">${friend.email}</div>
+          </div>
+          <div class="friend-actions">
+            <button class="btn-friend" onclick="removeFriend(${friend.id})">✖️ Удалить</button>
+          </div>
+        `;
+        container.appendChild(friendEl);
+      }
+    }
+  } catch (err) {
+    console.error('Error loading friends:', err);
+  }
+}
+
+async function removeFriend(friendId) {
+  if (!confirm('Удалить из друзей?')) return;
+  
+  try {
+    const response = await fetch(`${API_URL}/auth/users/${friendId}/friend`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      loadFriends();
+    }
+  } catch (err) {
+    console.error('Error removing friend:', err);
+  }
+}
+
+// ===== ACCOUNT TAB =====
+
+async function loadAccount() {
+  const container = document.getElementById('accountTab');
+  container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю профиль...</p></div>';
+  
+  try {
+    const response = await fetch(`${API_URL}/auth/users/${currentUser.id}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      const profile = await response.json();
+      const firstLetter = (profile.name || 'U').charAt(0).toUpperCase();
+      
+      container.innerHTML = `
+        <div class="account-section">
+          <div class="account-avatar">${firstLetter}</div>
+          <div class="account-info">
+            <div class="account-name">${profile.name}</div>
+            <div class="account-email">${profile.email}</div>
+            ${profile.is_admin ? '<div style="color: var(--secondary); font-weight: 600;">👑 Администратор</div>' : ''}
+            <div class="account-stats">
+              <div class="stat">
+                <div class="stat-value">${profile.posts_count}</div>
+                <div class="stat-label">Постов</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value">${profile.friends_count}</div>
+                <div class="stat-label">Друзей</div>
+              </div>
+              <div class="stat">
+                <div class="stat-value">${profile.likes_count}</div>
+                <div class="stat-label">Лайков</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error('Error loading account:', err);
+  }
+}
+
+// ===== INITIALIZATION =====
+
+window.addEventListener('load', () => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    // TODO: Verify token is still valid
+    showApp();
+  } else {
+    showAuth();
+  }
+});
