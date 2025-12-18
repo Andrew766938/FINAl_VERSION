@@ -61,21 +61,21 @@ async def init_sample_data():
             auth_service = AuthService(db)
             
             users_data = [
-                {"email": "alice@betony.local", "password": "password123", "name": "Alice Johnson"},
-                {"email": "bob@betony.local", "password": "password123", "name": "Bob Smith"},
-                {"email": "charlie@betony.local", "password": "password123", "name": "Charlie Brown"},
-                {"email": "diana@betony.local", "password": "password123", "name": "Diana Prince"},
-                {"email": "evan@betony.local", "password": "password123", "name": "Evan Davis"},
-                {"email": "fiona@betony.local", "password": "password123", "name": "Fiona Garcia"},
-                {"email": "george@betony.local", "password": "password123", "name": "George Martinez"},
-                {"email": "hannah@betony.local", "password": "password123", "name": "Hannah Rodriguez"},
-                {"email": "ian@betony.local", "password": "password123", "name": "Ian Wilson"},
-                {"email": "julia@betony.local", "password": "password123", "name": "Julia Anderson"},
-                {"email": "kevin@betony.local", "password": "password123", "name": "Kevin Taylor"},
-                {"email": "lisa@betony.local", "password": "password123", "name": "Lisa Thomas"},
-                {"email": "michael@betony.local", "password": "password123", "name": "Michael Lee"},
-                {"email": "nina@betony.local", "password": "password123", "name": "Nina White"},
-                {"email": "oliver@betony.local", "password": "password123", "name": "Oliver Harris"},
+                {"email": "alice@betony.local", "password": "password123", "name": "Алиса Джонсон"},
+                {"email": "bob@betony.local", "password": "password123", "name": "Боб Смит"},
+                {"email": "charlie@betony.local", "password": "password123", "name": "Чарли Браун"},
+                {"email": "diana@betony.local", "password": "password123", "name": "Диана Принс"},
+                {"email": "evan@betony.local", "password": "password123", "name": "Иван Дэвис"},
+                {"email": "fiona@betony.local", "password": "password123", "name": "Фиона Гарсия"},
+                {"email": "george@betony.local", "password": "password123", "name": "Джордж Мартинес"},
+                {"email": "hannah@betony.local", "password": "password123", "name": "Ханна Родригес"},
+                {"email": "ian@betony.local", "password": "password123", "name": "Ян Вилсон"},
+                {"email": "julia@betony.local", "password": "password123", "name": "Юлия Андерсон"},
+                {"email": "kevin@betony.local", "password": "password123", "name": "Кевин Тейлор"},
+                {"email": "lisa@betony.local", "password": "password123", "name": "Лиза Томас"},
+                {"email": "michael@betony.local", "password": "password123", "name": "Майкл Ли"},
+                {"email": "nina@betony.local", "password": "password123", "name": "Нина Уайт"},
+                {"email": "oliver@betony.local", "password": "password123", "name": "Оливер Харрис"},
             ]
             
             users = []
@@ -102,53 +102,53 @@ async def init_sample_data():
             posts_service = PostService(db)
             posts_data = [
                 {
-                    "title": "My First Blog Post",
-                    "content": "Hello everyone! This is my first post on Betony. I'm excited to share my thoughts and connect with the community.",
+                    "title": "Мой первый пост в блоге",
+                    "content": "Привет всем! Это мой первый пост в Betony. Я рад поделиться своими мыслями и пообщаться с сообществом.",
                     "user_id": users[0].id
                 },
                 {
-                    "title": "Learning Python is Awesome",
-                    "content": "I started learning Python last month and it's been an amazing journey. The syntax is clean and expressive.",
+                    "title": "Изучение Python - это потрясающе",
+                    "content": "Начал изучать Python в прошлом месяце и это был удивительный путь. Синтаксис очень чистый и выразительный.",
                     "user_id": users[1].id
                 },
                 {
-                    "title": "Web Development Tips",
-                    "content": "Here are some tips I've learned about web development: 1) Always test your code, 2) Use version control, 3) Write clean code.",
+                    "title": "Советы по веб-разработке",
+                    "content": "Вот несколько советов, которые я узнал о веб-разработке: 1) Всегда тестируйте код, 2) Используйте контроль версий, 3) Пишите чистый код.",
                     "user_id": users[2].id
                 },
                 {
-                    "title": "Building FastAPI Applications",
-                    "content": "FastAPI is a modern, fast web framework for building APIs with Python. I've been using it and love the developer experience.",
+                    "title": "Создание приложений на FastAPI",
+                    "content": "FastAPI - это современный, быстрый веб-фреймворк для создания API на Python. Я использую его и люблю опыт разработки.",
                     "user_id": users[0].id
                 },
                 {
-                    "title": "Tips for Remote Work",
-                    "content": "Working remotely has its challenges and benefits. Here are my tips: maintain routine, have a dedicated workspace, take breaks.",
+                    "title": "Советы для удаленной работы",
+                    "content": "Удаленная работа имеет свои плюсы и минусы. Вот мои советы: соблюдайте график, имейте отдельное рабочее место, делайте перерывы.",
                     "user_id": users[3].id
                 },
                 {
-                    "title": "Books Worth Reading",
-                    "content": "I've been reading some great books lately. Check out 'Clean Code' and 'Design Patterns' - they've improved my programming skills.",
+                    "title": "Книги, которые стоит прочитать",
+                    "content": "В последнее время я читаю отличные книги. Проверьте 'Clean Code' и 'Design Patterns' - они улучшили мои навыки программирования.",
                     "user_id": users[4].id
                 },
                 {
-                    "title": "Coffee and Coding",
-                    "content": "There's something magical about a good cup of coffee while coding. What's your favorite coding beverage?",
+                    "title": "Кофе и кодирование",
+                    "content": "Есть что-то магическое в хорошей чашке кофе во время кодирования. Какой ваш любимый напиток для программирования?",
                     "user_id": users[5].id
                 },
                 {
-                    "title": "Machine Learning Journey",
-                    "content": "Started exploring machine learning this week. The possibilities are endless and I'm excited to dive deeper!",
+                    "title": "Путешествие в Machine Learning",
+                    "content": "На этой неделе начал изучать машинное обучение. Возможности безграничны и я с нетерпением жду глубокого погружения!",
                     "user_id": users[6].id
                 },
                 {
                     "title": "Frontend vs Backend",
-                    "content": "Both frontend and backend development have their charms. I love working on full-stack projects where I can do both!",
+                    "content": "И фронтенд, и бэкенд разработка имеют свои преимущества. Я люблю работать над полнофункциональными проектами, где я могу делать оба!",
                     "user_id": users[7].id
                 },
                 {
-                    "title": "Open Source Contributions",
-                    "content": "Made my first open source contribution today! It feels great to give back to the community.",
+                    "title": "Вклад в Open Source",
+                    "content": "Сегодня я сделал свой первый вклад в открытый исходный код! Это замечательное чувство - вносить вклад в сообщество.",
                     "user_id": users[8].id
                 },
             ]
@@ -203,47 +203,47 @@ async def init_sample_data():
                 {
                     "post_id": posts[0].id,
                     "user_id": users[1].id,
-                    "content": "Great first post! Welcome to Betony!"
+                    "content": "Отличный первый пост! Добро пожаловать в Betony!"
                 },
                 {
                     "post_id": posts[0].id,
                     "user_id": users[2].id,
-                    "content": "Looking forward to reading more from you!"
+                    "content": "С нетерпением жду больше постов от вас!"
                 },
                 {
                     "post_id": posts[1].id,
                     "user_id": users[0].id,
-                    "content": "Python is amazing! Have you tried FastAPI yet?"
+                    "content": "Python просто замечательный! Ты уже пробовал FastAPI?"
                 },
                 {
                     "post_id": posts[2].id,
                     "user_id": users[1].id,
-                    "content": "These are solid tips! Clean code is so important."
+                    "content": "Это отличные советы! Чистый код очень важен."
                 },
                 {
                     "post_id": posts[3].id,
                     "user_id": users[2].id,
-                    "content": "FastAPI is indeed a game changer for API development."
+                    "content": "FastAPI действительно революционер для разработки API."
                 },
                 {
                     "post_id": posts[4].id,
                     "user_id": users[1].id,
-                    "content": "I totally agree with the dedicated workspace tip!"
+                    "content": "Я полностью согласен с советом про отдельное рабочее место!"
                 },
                 {
                     "post_id": posts[5].id,
                     "user_id": users[0].id,
-                    "content": "Clean Code is my favorite book! Great recommendations."
+                    "content": "Clean Code - моя любимая книга! Спасибо за рекомендации."
                 },
                 {
                     "post_id": posts[6].id,
                     "user_id": users[8].id,
-                    "content": "Coffee is essential! I prefer green tea though."
+                    "content": "Кофе просто необходим! Хотя я предпочитаю зелёный чай."
                 },
                 {
                     "post_id": posts[7].id,
                     "user_id": users[9].id,
-                    "content": "ML is fascinating! Check out PyTorch if you haven't already."
+                    "content": "ML просто фантастика! Проверь PyTorch если ещё не пробовал."
                 },
             ]
             
