@@ -1,6 +1,6 @@
 from app.database.db_manager import DBManager
 from app.schemes.posts import PostCreate, PostUpdate, PostResponse
-from app.exceptions.exceptions import PostNotFound, PostNotOwner
+from app.exceptions.exceptions import PostNotFound, Forbidden
 
 
 class PostService:
@@ -101,7 +101,7 @@ class PostService:
             raise PostNotFound()
         
         if post.user_id != user_id:
-            raise PostNotOwner()
+            raise Forbidden()
         
         updated_post = await self.db.posts.update_post(post_id, post_data.title, post_data.content)
         await self.db.commit()
@@ -127,7 +127,7 @@ class PostService:
             raise PostNotFound()
         
         if post.user_id != user_id:
-            raise PostNotOwner()
+            raise Forbidden()
         
         success = await self.db.posts.delete_post_by_id(post_id)
         if not success:
