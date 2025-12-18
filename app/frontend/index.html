@@ -212,6 +212,11 @@
       color: white;
     }
     
+    .btn-danger:hover:not(:disabled) {
+      background: #dc2626;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
     .btn-secondary {
       background: rgba(168, 85, 247, 0.15);
       color: var(--primary-light);
@@ -599,6 +604,9 @@
       padding: 10px 0;
       border-bottom: 1px solid rgba(168, 85, 247, 0.1);
       font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
     }
 
     .comment-item:last-child {
@@ -613,6 +621,16 @@
 
     .comment-content {
       color: var(--text-light);
+      flex: 1;
+    }
+
+    .comment-text {
+      flex: 1;
+    }
+
+    .comment-delete-btn {
+      margin-left: 8px;
+      flex-shrink: 0;
     }
     
     ::-webkit-scrollbar {
@@ -1005,6 +1023,9 @@
       const authorEmail = post.author_email || post.user?.email || 'user';
       
       const isLiked = userLikesCache.has(post.id);
+      const isAuthor = currentUser.id === post.user_id;
+      const isAdmin = currentUser.is_admin;
+      const canDelete = isAuthor || isAdmin;
       
       let likesCount = 0;
       let commentsCount = 0;
@@ -1052,6 +1073,7 @@
             ${isLiked ? '❤️ Убрать лайк' : '🤍 Поставить лайк'}
           </button>
           <button class="btn btn-small btn-secondary" onclick="toggleComments(${post.id})">💬 Комментировать</button>
+          ${canDelete ? `<button class="btn btn-small btn-danger" onclick="deletePost(${post.id})">🗑️ Удалить</button>` : ''}
         </div>
         <div id="comments-section-${post.id}" class="comments-section" style="display: none;">
           <div class="comment-form">
@@ -1064,6 +1086,26 @@
       container.appendChild(el);
       
       await loadPostComments(post.id);
+    }
+
+    async function deletePost(postId) {
+      if (!confirm('Вы уверены? Пост будет удален.')) return;
+      
+      try {
+        const res = await apiCall(`/posts/${postId}`, {
+          method: 'DELETE'
+        });
+        
+        if (res.ok) {
+          alert('✅ Пост удален!');
+          await loadPosts();
+        } else {
+          alert('❌ Ошибка при удалении поста');
+        }
+      } catch (e) {
+        console.error('[DELETE] Ошибка:', e);
+        alert('❌ Ошибка: ' + e.message);
+      }
     }
 
     async function toggleLike(postId) {
@@ -1371,6 +1413,7 @@
         <div><span class="profile-label">Имя:</span> ${currentUser.username || currentUser.name || 'Не указано'}</div>
         <div><span class="profile-label">Email:</span> ${currentUser.email || 'Не указано'}</div>
         <div><span class="profile-label">ID:</span> ${currentUser.id || '—'}</div>
+        <div><span class="profile-label">Статус:</span> ${currentUser.is_admin ? '👑 Администратор' : '👤 Обычный пользователь'}</div>
       `;
 
       card.appendChild(meta);
@@ -1469,6 +1512,34 @@
       }
     }
 
+    async function deleteComment(postId, commentId) {
+      if (!confirm('Удалить комментарий?')) return;
+      
+      try {
+        const res = await apiCall(`/posts/${postId}/comments/${commentId}`, {
+          method: 'DELETE'
+        });
+        
+        if (res.ok) {
+          alert('✅ Комментарий удален!');
+          await loadPostComments(postId);
+          
+          const commentsRes = await apiCall(`/posts/${postId}/comments`);
+          if (commentsRes.ok) {
+            const comments = await commentsRes.json();
+            const count = Array.isArray(comments) ? comments.length : 0;
+            const el = document.getElementById(`comments-count-${postId}`);
+            if (el) el.textContent = `💬 Комментариев: ${count}`;
+          }
+        } else {
+          alert('❌ Ошибка при удалении комментария');
+        }
+      } catch (e) {
+        console.error('[DELETE] Ошибка:', e);
+        alert('❌ Ошибка: ' + e.message);
+      }
+    }
+
     async function loadPostComments(postId) {
       try {
         const res = await apiCall(`/posts/${postId}/comments`);
@@ -1484,8 +1555,11 @@
         
         listEl.innerHTML = comments.map(c => `
           <div class="comment-item">
-            <div class="comment-author">${c.author_username || 'Неизвестно'}</div>
-            <div class="comment-content">${c.content}</div>
+            <div class="comment-text">
+              <div class="comment-author">${c.author_username || 'Неизвестно'}</div>
+              <div class="comment-content">${c.content}</div>
+            </div>
+            ${(currentUser.id === c.user_id || currentUser.is_admin) ? `<button class="btn btn-small btn-danger comment-delete-btn" onclick="deleteComment(${postId}, ${c.id})">🗑️</button>` : ''}
           </div>
         `).join('');
       } catch (e) {
