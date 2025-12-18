@@ -1,6 +1,5 @@
 aiosqlite==0.21.0
 alembic==1.17.1
-annotated-types==0.7.0
 anyio==4.11.0
 bcrypt==4.0.1
 certifi==2025.10.5
@@ -33,8 +32,6 @@ python-dotenv==1.2.1
 python-multipart==0.0.20
 pyyaml==6.0.3
 rich==14.2.0
-rich-toolkit==0.15.1
-sentry-sdk==2.43.0
 shellingham==1.5.4
 sniffio==1.3.1
 sqladmin==0.21.0
@@ -42,7 +39,6 @@ sqlalchemy==2.0.44
 starlette==0.49.2
 typer==0.20.0
 typing-extensions==4.15.0
-typing-inspection==0.4.2
 ujson==5.11.0
 urllib3==2.5.0
 uvicorn==0.38.0
