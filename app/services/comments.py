@@ -42,12 +42,14 @@ class CommentService:
         await self.db.commit()
         return updated_comment
 
-    async def delete_comment(self, comment_id: int, current_user_id: int) -> bool:
-        """Delete a comment"""
+    async def delete_comment(self, comment_id: int, current_user_id: int, is_admin: bool = False) -> bool:
+        """Delete a comment. Only author or admin can delete."""
         comment = await self.db.comments.get_comment_by_id(comment_id)
         if not comment:
             raise CommentNotFound()
-        if comment.user_id != current_user_id:
+        
+        # Allow deletion if user is author OR if user is admin
+        if comment.user_id != current_user_id and not is_admin:
             raise Forbidden()
         
         result = await self.db.comments.delete_comment(comment_id)
