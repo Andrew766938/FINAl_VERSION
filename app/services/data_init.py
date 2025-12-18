@@ -185,8 +185,7 @@ async def init_sample_data():
                 (posts[5].id, users[0].id),
                 (posts[6].id, users[7].id),
                 (posts[7].id, users[8].id),
-                (posts[8].id, users[9].id),
-                (posts[9].id, users[10].id),
+                (posts[8].id, users[9].id if len(users) > 9 else users[0].id),
             ]
             
             for post_id, user_id in like_pairs:
@@ -235,22 +234,24 @@ async def init_sample_data():
                 },
                 {
                     "post_id": posts[6].id,
-                    "user_id": users[8].id,
+                    "user_id": users[8].id if len(users) > 8 else users[0].id,
                     "content": "Кофе просто необходим! Хотя я предпочитаю зелёный чай."
                 },
                 {
                     "post_id": posts[7].id,
-                    "user_id": users[9].id,
+                    "user_id": users[9].id if len(users) > 9 else users[0].id,
                     "content": "ML просто фантастика! Проверь PyTorch если ещё не пробовал."
                 },
             ]
             
             for comment_data in comments_data:
                 try:
+                    comment_create = CommentCreate(content=comment_data["content"])
+                    # Correct signature: (comment_data, user_id, post_id)
                     comment = await db.comments.create_comment(
-                        comment_data["post_id"],
+                        comment_create,
                         comment_data["user_id"],
-                        comment_data["content"]
+                        comment_data["post_id"]
                     )
                     await db.commit()
                 except Exception as e:
