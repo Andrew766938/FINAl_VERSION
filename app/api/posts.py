@@ -329,34 +329,3 @@ async def get_post_likes(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get likes"
         )
-
-
-@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(
-    post_id: int,
-    current_user: UserModel = Depends(get_current_user),
-    db: DBDep = Depends(),
-):
-    """Delete a post (Admin only)"""
-    print(f"[API] 🗑️ Delete post request: post_id={post_id}, user={current_user.name}")
-    
-    # Check if user is admin
-    if not current_user.is_admin:
-        print(f"[API] ❌ Access denied: user {current_user.name} is not admin")
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can delete posts"
-        )
-    
-    try:
-        service = PostService(db)
-        await service.delete_one(post_id)
-        print(f"[API] ✅ Post {post_id} deleted successfully")
-        return None
-    except Exception as e:
-        print(f"[API] ❌ Error deleting post: {e}")
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete post"
-        )
