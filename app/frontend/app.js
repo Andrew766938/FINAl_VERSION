@@ -2,6 +2,7 @@ const API_URL = 'http://localhost:8000';
 let currentUser = null;
 let currentTab = 'feed';
 let friendIds = new Set();
+let isGuestMode = false;
 
 // ===== AUTH FUNCTIONS =====
 
@@ -27,6 +28,8 @@ async function handleLogin(event) {
     if (response.ok) {
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
+      localStorage.removeItem('guestMode');
+      isGuestMode = false;
       currentUser = data.user;
       await loadUserData();
       showApp();
@@ -74,6 +77,8 @@ async function handleRegister(event) {
     if (response.ok) {
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
+      localStorage.removeItem('guestMode');
+      isGuestMode = false;
       currentUser = data.user;
       await loadUserData();
       showApp();
@@ -100,8 +105,10 @@ function switchAuthTab(tab) {
 
 function logout() {
   localStorage.removeItem('token');
+  localStorage.removeItem('guestMode');
   currentUser = null;
   friendIds.clear();
+  isGuestMode = false;
   showAuth();
 }
 
@@ -126,6 +133,8 @@ async function loadUserData() {
 
 // Helper: Check if post is liked
 async function isPostLiked(postId) {
+  if (isGuestMode) return false;
+  
   try {
     const response = await fetch(`${API_URL}/posts/${postId}/likes`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -154,6 +163,10 @@ function switchTab(tab) {
   const sidebar = document.getElementById('sidebarCreate');
   if (tab === 'feed') {
     sidebar.classList.remove('hidden');
+    if (isGuestMode) {
+      sidebar.style.opacity = '0.5';
+      sidebar.style.pointerEvents = 'none';
+    }
   } else {
     sidebar.classList.add('hidden');
   }
@@ -231,6 +244,12 @@ async function loadFeed() {
 }
 
 async function createPost() {
+  // GUEST MODE CHECK
+  if (isGuestMode) {
+    alert('⛔ Гостям недоступно создание постов. Пожалуйста, зарегистрируйтесь или войдите.');
+    return;
+  }
+  
   const title = document.getElementById('postTitle').value.trim();
   const content = document.getElementById('postContent').value.trim();
   
@@ -273,6 +292,10 @@ async function createPostElement(post) {
   const isLiked = await isPostLiked(post.id);
   const isOwnProfile = currentUser?.id === post.user_id;
   
+  // Guest mode: disable like button
+  const likeButtonDisabled = isGuestMode ? 'disabled' : '';
+  const likeButtonStyle = isGuestMode ? 'opacity: 0.5; cursor: not-allowed;' : '';
+  
   div.innerHTML = `
     <div class="post-header">
       <div class="post-avatar">${firstLetter}</div>
@@ -281,7 +304,7 @@ async function createPostElement(post) {
         <div class="post-meta">${date}</div>
       </div>
       <div style="flex: 1;"></div>
-      ${!isOwnProfile && !isFriend ? `
+      ${!isOwnProfile && !isFriend && !isGuestMode ? `
         <button class="btn-action" style="background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.3); padding: 6px 12px; font-size: 0.85rem; flex: none;" onclick="addFriend(${post.user_id}, '${post.author_name}')" title="Добавить в друзья">➕ Друзья</button>
       ` : ''}
       ${isFriend && !isOwnProfile ? `
@@ -299,15 +322,21 @@ async function createPostElement(post) {
       <span id="likes-count-${post.id}">❤️ ${post.likes_count || 0} лайков</span>
     </div>
     <div class="post-actions">
-      <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}">❤️ Нравится</button>
-      <button class="btn-action" onclick="toggleComments(${post.id})">💬 Комментарии</button>
+      <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isGuestMode ? 'opacity: 0.5; cursor: not-allowed;' : ''}${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}" ${isGuestMode ? 'disabled' : ''} title="${isGuestMode ? 'Недоступно в гостевом режиме' : ''}">❤️ Нравится</button>
+      <button class="btn-action" onclick="toggleComments(${post.id})" style="${isGuestMode ? 'opacity: 0.8;' : ''}">💬 Комментарии</button>
     </div>
     <div class="comments-section" id="comments-${post.id}" style="display:none;">
       <div class="comments-list" id="comments-list-${post.id}"></div>
-      <div class="comment-form">
-        <input type="text" class="comment-input" placeholder="Напишите комментарий..." id="comment-input-${post.id}">
-        <button class="btn-action" onclick="addComment(${post.id})" style="flex: none; padding: 8px 16px;">Отправить</button>
-      </div>
+      ${!isGuestMode ? `
+        <div class="comment-form">
+          <input type="text" class="comment-input" placeholder="Напишите комментарий..." id="comment-input-${post.id}">
+          <button class="btn-action" onclick="addComment(${post.id})" style="flex: none; padding: 8px 16px;">Отправить</button>
+        </div>
+      ` : `
+        <div style="padding: 10px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+          💬 Комментарии недоступны в гостевом режиме
+        </div>
+      `}
     </div>
   `;
   
@@ -315,6 +344,11 @@ async function createPostElement(post) {
 }
 
 async function addFriend(userId, userName) {
+  if (isGuestMode) {
+    alert('⛔ Гостям недоступно добавление в друзья. Пожалуйста, зарегистрируйтесь или войдите.');
+    return;
+  }
+  
   try {
     const response = await fetch(`${API_URL}/auth/users/${userId}/friend`, {
       method: 'POST',
@@ -404,6 +438,11 @@ async function loadComments(postId) {
 }
 
 async function addComment(postId) {
+  if (isGuestMode) {
+    alert('⛔ Гостям недоступно комментирование. Пожалуйста, зарегистрируйтесь или войдите.');
+    return;
+  }
+  
   const input = document.getElementById(`comment-input-${postId}`);
   const content = input.value.trim();
   
@@ -446,6 +485,11 @@ async function deleteComment(postId, commentId) {
 }
 
 async function toggleLike(postId) {
+  if (isGuestMode) {
+    alert('⛔ Гостям недоступны лайки. Пожалуйста, зарегистрируйтесь или войдите.');
+    return;
+  }
+  
   try {
     const btn = document.getElementById(`like-btn-${postId}`);
     const likesCountEl = document.getElementById(`likes-count-${postId}`);
@@ -490,6 +534,11 @@ async function toggleLike(postId) {
 // ===== FAVORITES TAB =====
 
 async function loadFavorites() {
+  if (isGuestMode) {
+    document.getElementById('favoritesTab').innerHTML = '<div class="empty-state"><p>⛔ Избранное недоступно в гостевом режиме</p></div>';
+    return;
+  }
+  
   const container = document.getElementById('favoritesTab');
   container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю избранное...</p></div>';
   
@@ -529,6 +578,11 @@ async function loadFavorites() {
 // ===== FRIENDS TAB =====
 
 async function loadFriends() {
+  if (isGuestMode) {
+    document.getElementById('friendsTab').innerHTML = '<div class="empty-state"><p>⛔ Список друзей недоступен в гостевом режиме</p></div>';
+    return;
+  }
+  
   const container = document.getElementById('friendsTab');
   container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю друзей...</p></div>';
   
@@ -588,6 +642,12 @@ async function removeFriend(friendId) {
 
 async function loadAccount() {
   const container = document.getElementById('accountTab');
+  
+  if (isGuestMode) {
+    container.innerHTML = '<div class="empty-state"><p>⛔ Профиль недоступен в гостевом режиме</p></div>';
+    return;
+  }
+  
   container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю профиль...</p></div>';
   
   try {
@@ -633,7 +693,19 @@ async function loadAccount() {
 
 window.addEventListener('load', async () => {
   const token = localStorage.getItem('token');
-  if (token) {
+  const guestMode = localStorage.getItem('guestMode');
+  
+  if (guestMode) {
+    isGuestMode = true;
+    currentUser = {
+      id: 0,
+      name: 'Гость',
+      email: 'guest@betony.local',
+      is_admin: false
+    };
+    showApp();
+    document.getElementById('guestBanner').style.display = 'block';
+  } else if (token) {
     showApp();
   } else {
     showAuth();
