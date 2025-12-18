@@ -9,7 +9,7 @@ from app.services.likes import LikeService
 from app.schemes.posts import PostCreate, PostUpdate, PostResponse
 from app.schemes.comments import CommentCreate, CommentResponse
 from app.models.users import UserModel
-from app.exceptions.exceptions import PostNotFound, CommentNotFound, Forbidden
+from app.exceptions.exceptions import PostNotFound, CommentNotFound, Forbidden, AlreadyLiked
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -306,14 +306,22 @@ async def like_post(
 ):
     """Like a post"""
     try:
+        print(f"[API] Like post {post_id} by user {current_user.id}")
         service = LikeService(db)
         like = await service.create_like(post_id, current_user.id)
+        print(f"[API] Like created successfully")
         return {
             "id": like.id,
             "post_id": like.post_id,
             "user_id": like.user_id,
             "created_at": like.created_at,
         }
+    except AlreadyLiked:
+        print(f"[API] Already liked")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Already liked this post"
+        )
     except Exception as e:
         print(f"[API] Error liking post: {e}")
         traceback.print_exc()
@@ -334,11 +342,14 @@ async def unlike_post(
 ):
     """Unlike a post"""
     try:
+        print(f"[API] Unlike post {post_id} by user {current_user.id}")
         service = LikeService(db)
         await service.delete_like(post_id, current_user.id)
+        print(f"[API] Like deleted successfully")
         return None
     except Exception as e:
         print(f"[API] Error unliking post: {e}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to unlike post"
