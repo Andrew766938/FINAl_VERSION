@@ -15,6 +15,7 @@ from app.api.likes import router as likes_router
 from app.config import settings
 from app.database.database import Base
 from app.services.data_init import init_sample_data
+from app.admin import setup_admin
 
 app = FastAPI(title="Betony", version="1.0.0")
 
@@ -62,6 +63,14 @@ async def startup_event():
         print("[APP] Initializing sample data...")
         await init_sample_data()
         print("[APP] Sample data initialized successfully!")
+        
+        # Setup SQLAdmin
+        print("[APP] Setting up admin panel...")
+        try:
+            setup_admin(app, engine)
+            print("[APP] 🎉 Admin panel available at: http://localhost:8000/admin")
+        except Exception as e:
+            print(f"[APP] ⚠️  Could not setup admin panel: {e}")
         
         await engine.dispose()
     except Exception as e:
