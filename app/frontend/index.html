@@ -1088,8 +1088,7 @@
       await loadPostComments(post.id);
     }
 
-    async function deletePost(postId) {
-      if (!confirm('Вы уверены? Пост будет удален.')) return;
+    window.deletePost = async function(postId) {      if (!confirm('Вы уверены? Пост будет удален.')) return;
       
       try {
         const res = await apiCall(`/posts/${postId}`, {
@@ -1106,7 +1105,7 @@
         console.error('[DELETE] Ошибка:', e);
         alert('❌ Ошибка: ' + e.message);
       }
-    }
+    };
 
     async function toggleLike(postId) {
       const isLiked = userLikesCache.has(postId);
@@ -1512,7 +1511,7 @@
       }
     }
 
-    async function deleteComment(postId, commentId) {
+    window.deleteComment = async function(postId, commentId) {
       if (!confirm('Удалить комментарий?')) return;
       
       try {
@@ -1538,7 +1537,7 @@
         console.error('[DELETE] Ошибка:', e);
         alert('❌ Ошибка: ' + e.message);
       }
-    }
+    };
 
     async function loadPostComments(postId) {
       try {
