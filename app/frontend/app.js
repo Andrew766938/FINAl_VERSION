@@ -1,7 +1,6 @@
 const API_URL = 'http://localhost:8000';
 let currentUser = null;
 let currentTab = 'feed';
-let likedPosts = new Set();
 let friendIds = new Set();
 
 // ===== AUTH FUNCTIONS =====
@@ -102,7 +101,6 @@ function switchAuthTab(tab) {
 function logout() {
   localStorage.removeItem('token');
   currentUser = null;
-  likedPosts.clear();
   friendIds.clear();
   showAuth();
 }
@@ -266,6 +264,7 @@ async function createPost() {
 async function createPostElement(post) {
   const div = document.createElement('div');
   div.className = 'post';
+  div.id = `post-${post.id}`;
   
   const firstLetter = (post.author_name || 'U').charAt(0).toUpperCase();
   const date = new Date(post.created_at).toLocaleDateString('ru-RU');
@@ -297,10 +296,10 @@ async function createPostElement(post) {
       <p>${post.content}</p>
     </div>
     <div class="post-stats">
-      <span>❤️ ${post.likes_count || 0} лайков</span>
+      <span id="likes-count-${post.id}">❤️ ${post.likes_count || 0} лайков</span>
     </div>
     <div class="post-actions">
-      <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}">${isLiked ? '❤️ Нравится' : '❤️ Нравится'}</button>
+      <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}">❤️ Нравится</button>
       <button class="btn-action" onclick="toggleComments(${post.id})">💬 Комментарии</button>
     </div>
     <div class="comments-section" id="comments-${post.id}" style="display:none;">
@@ -449,6 +448,7 @@ async function deleteComment(postId, commentId) {
 async function toggleLike(postId) {
   try {
     const btn = document.getElementById(`like-btn-${postId}`);
+    const likesCountEl = document.getElementById(`likes-count-${postId}`);
     const isLiked = await isPostLiked(postId);
     
     const response = await fetch(`${API_URL}/posts/${postId}/like`, {
@@ -457,19 +457,30 @@ async function toggleLike(postId) {
     });
     
     if (response.ok) {
-      // Обновляем кнопку сразу
+      // Немедленно обновляем кнопку БЕЗ перезагрузки
       if (isLiked) {
+        // Убираем лайк
         btn.classList.remove('liked');
         btn.style.background = '';
         btn.style.color = '';
         btn.style.borderColor = '';
       } else {
+        // Добавляем лайк
         btn.classList.add('liked');
         btn.style.background = 'rgba(236, 72, 153, 0.2)';
         btn.style.color = 'var(--secondary)';
         btn.style.borderColor = 'rgba(236, 72, 153, 0.3)';
       }
-      loadFeed();
+      
+      // Получаем обновлённый счётчик
+      const getPost = await fetch(`${API_URL}/posts/${postId}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      if (getPost.ok) {
+        const post = await getPost.json();
+        likesCountEl.textContent = `❤️ ${post.likes_count || 0} лайков`;
+      }
     }
   } catch (err) {
     console.error('Error toggling like:', err);
