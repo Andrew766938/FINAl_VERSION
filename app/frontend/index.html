@@ -488,6 +488,8 @@
       cursor: pointer;
       transition: all 0.3s;
       flex: 1;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
     }
     
     .btn-action:hover {
@@ -601,8 +603,8 @@
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
           <div class="test-data-hint">
             💡 <strong>Легко войти для тестирования:</strong>
-            <div>👑 Администратор: alice@betony.local / password123</div>
-            <div>👤 Обычный пользователь: test@betony.local / test123</div>
+            <div>👑 Админ: alice@betony.local / password123</div>
+            <div>👤 Обычный: test@betony.local / test123</div>
           </div>
           
           <div class="form-group">
@@ -671,7 +673,7 @@
             <textarea id="postContent" placeholder="О чем ваш пост?"></textarea>
           </div>
           
-          <button class="btn-create" onclick="createPost()">🚀 Опубликовать</button>
+          <button type="button" class="btn-create" onclick="createPost()">🚀 Опубликовать</button>
         </div>
       </div>
       
@@ -679,7 +681,7 @@
       <div class="content">
         <div id="postsContainer" class="posts-container">
           <div class="empty-state">
-            <p>📝 Загрузка постов...</p>
+            <p>📝 Загружаю посты...</p>
           </div>
         </div>
       </div>
@@ -690,7 +692,7 @@
   <script src="/static/guest.js"></script>
   <script src="/static/app.js"></script>
   <script>
-    console.log('✅ Betony platform loaded');
+    console.log('✅ Betony platform fully loaded');
   </script>
 </body>
 </html>
