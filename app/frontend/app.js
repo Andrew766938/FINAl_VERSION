@@ -1,6 +1,8 @@
 const API_URL = 'http://localhost:8000';
 let currentUser = null;
 let currentTab = 'feed';
+let likedPosts = new Set();
+let friendIds = new Set();
 
 // ===== AUTH FUNCTIONS =====
 
@@ -14,7 +16,7 @@ async function handleLogin(event) {
   btn.disabled = true;
   status.style.display = 'block';
   status.className = 'form-loading';
-  status.textContent = '⏳ Ополняю логин...';
+  status.textContent = '⏳ Оползняю логин...';
   
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
@@ -27,6 +29,7 @@ async function handleLogin(event) {
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
       currentUser = data.user;
+      await loadUserData();
       showApp();
     } else {
       const error = await response.json();
@@ -60,7 +63,7 @@ async function handleRegister(event) {
   btn.disabled = true;
   status.style.display = 'block';
   status.className = 'form-loading';
-  status.textContent = '⏳ Ополняю регистрацию...';
+  status.textContent = '⏳ Опольняю регистрацию...';
   
   try {
     const response = await fetch(`${API_URL}/auth/register`, {
@@ -73,6 +76,7 @@ async function handleRegister(event) {
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
       currentUser = data.user;
+      await loadUserData();
       showApp();
     } else {
       const error = await response.json();
@@ -98,7 +102,55 @@ function switchAuthTab(tab) {
 function logout() {
   localStorage.removeItem('token');
   currentUser = null;
+  likedPosts.clear();
+  friendIds.clear();
   showAuth();
+}
+
+// ===== LOAD USER DATA =====
+
+async function loadUserData() {
+  // Load friend IDs
+  try {
+    const response = await fetch(`${API_URL}/auth/friends`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      const friends = await response.json();
+      friendIds.clear();
+      friends.forEach(friend => friendIds.add(friend.id));
+    }
+  } catch (err) {
+    console.error('Error loading friends:', err);
+  }
+  
+  // Load liked post IDs
+  try {
+    const response = await fetch(`${API_URL}/posts/`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      const posts = await response.json();
+      likedPosts.clear();
+      
+      for (const post of posts) {
+        const likesResponse = await fetch(`${API_URL}/posts/${post.id}/likes`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (likesResponse.ok) {
+          const likes = await likesResponse.json();
+          if (likes.some(like => like.user_id === currentUser.id)) {
+            likedPosts.add(post.id);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error loading likes:', err);
+  }
 }
 
 // ===== TAB SWITCHING =====
@@ -195,7 +247,7 @@ async function createPost() {
   const content = document.getElementById('postContent').value.trim();
   
   if (!title || !content) {
-    alert('⚠️ Пополните все поля');
+    alert('⚠️ Попольните все поля');
     return;
   }
   
@@ -227,6 +279,10 @@ function createPostElement(post) {
   
   const firstLetter = (post.author_name || 'U').charAt(0).toUpperCase();
   const date = new Date(post.created_at).toLocaleDateString('ru-RU');
+  const isMyPost = currentUser?.id === post.user_id;
+  const isFriend = friendIds.has(post.user_id);
+  const isLiked = likedPosts.has(post.id);
+  const isOwnProfile = currentUser?.id === post.user_id;
   
   div.innerHTML = `
     <div class="post-header">
@@ -235,7 +291,14 @@ function createPostElement(post) {
         <div class="post-author">${post.author_name}</div>
         <div class="post-meta">${date}</div>
       </div>
-      ${currentUser?.is_admin || currentUser?.id === post.user_id ? `
+      <div style="flex: 1;"></div>
+      ${!isOwnProfile && !isFriend ? `
+        <button class="btn-action" style="background: rgba(16, 185, 129, 0.15); color: var(--success); border-color: rgba(16, 185, 129, 0.3); padding: 6px 12px; font-size: 0.85rem; flex: none;" onclick="addFriend(${post.user_id}, '${post.author_name}')" title="Добавить в друзья">➕ Друзья</button>
+      ` : ''}
+      ${isFriend && !isOwnProfile ? `
+        <button class="btn-action" style="background: rgba(168, 85, 247, 0.15); color: var(--primary-light); border-color: rgba(168, 85, 247, 0.3); padding: 6px 12px; font-size: 0.85rem; flex: none;" disabled title="В друзьях">✓ В друзьях</button>
+      ` : ''}
+      ${currentUser?.is_admin || isMyPost ? `
         <button class="btn-icon" onclick="deletePost(${post.id})" title="Удалить">🗑️</button>
       ` : ''}
     </div>
@@ -247,19 +310,39 @@ function createPostElement(post) {
       <span>❤️ ${post.likes_count || 0} лайков</span>
     </div>
     <div class="post-actions">
-      <button class="btn-action" id="like-btn-${post.id}" onclick="toggleLike(${post.id})">❤️ Нравится</button>
+      <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}">❤️ ${isLiked ? 'Нравится' : 'Нравится'}</button>
       <button class="btn-action" onclick="toggleComments(${post.id})">💬 Комментарии</button>
     </div>
     <div class="comments-section" id="comments-${post.id}" style="display:none;">
       <div class="comments-list" id="comments-list-${post.id}"></div>
       <div class="comment-form">
         <input type="text" class="comment-input" placeholder="Напишите комментарий..." id="comment-input-${post.id}">
-        <button class="btn-action" onclick="addComment(${post.id})">Отправить</button>
+        <button class="btn-action" onclick="addComment(${post.id})" style="flex: none; padding: 8px 16px;">Отправить</button>
       </div>
     </div>
   `;
   
   return div;
+}
+
+async function addFriend(userId, userName) {
+  try {
+    const response = await fetch(`${API_URL}/auth/users/${userId}/friend`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    
+    if (response.ok) {
+      friendIds.add(userId);
+      alert(`✅ ${userName} добавлен в друзья!`);
+      loadFeed();
+    } else {
+      const error = await response.json();
+      alert(`❌ Ошибка: ${error.detail}`);
+    }
+  } catch (err) {
+    console.error('Error adding friend:', err);
+  }
 }
 
 async function deletePost(postId) {
@@ -376,7 +459,7 @@ async function deleteComment(postId, commentId) {
 async function toggleLike(postId) {
   try {
     const btn = document.getElementById(`like-btn-${postId}`);
-    const isLiked = btn.classList.contains('liked');
+    const isLiked = likedPosts.has(postId);
     
     const response = await fetch(`${API_URL}/posts/${postId}/like`, {
       method: isLiked ? 'DELETE' : 'POST',
@@ -384,7 +467,13 @@ async function toggleLike(postId) {
     });
     
     if (response.ok) {
-      btn.classList.toggle('liked');
+      if (isLiked) {
+        likedPosts.delete(postId);
+        btn.classList.remove('liked');
+      } else {
+        likedPosts.add(postId);
+        btn.classList.add('liked');
+      }
       loadFeed();
     }
   } catch (err) {
@@ -489,6 +578,7 @@ async function removeFriend(friendId) {
     });
     
     if (response.ok) {
+      friendIds.delete(friendId);
       loadFriends();
     }
   } catch (err) {
@@ -543,7 +633,7 @@ async function loadAccount() {
 
 // ===== INITIALIZATION =====
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   const token = localStorage.getItem('token');
   if (token) {
     // TODO: Verify token is still valid
