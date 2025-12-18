@@ -42,6 +42,11 @@ async def create_test_data():
             
             if user:
                 print(f"⚠️  User alice@betony.local already exists (ID: {user.id})")
+                if not user.is_admin:
+                    print(f"    Updating to admin...")
+                    user.is_admin = True
+                    await session.commit()
+                    print(f"    ✅ User is now admin")
             else:
                 print("👤 Creating user alice@betony.local...")
                 hashed_password = AuthService.hash_password("password123")
@@ -49,15 +54,17 @@ async def create_test_data():
                     name="Alice",
                     email="alice@betony.local",
                     hashed_password=hashed_password,
-                    role_id=1
+                    role_id=1,
+                    is_admin=True  # ← SET AS ADMIN
                 )
                 session.add(new_user)
                 await session.commit()
-                print(f"✅ User created (ID: {new_user.id})")
+                print(f"✅ User created (ID: {new_user.id}, is_admin: True)")
             
             print("\n✅ Test data ready!")
             print("📧 Email: alice@betony.local")
             print("🔑 Password: password123")
+            print("👑 Role: ADMIN")
             
         except Exception as e:
             print(f"❌ Error: {e}")
