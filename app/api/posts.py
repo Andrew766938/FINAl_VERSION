@@ -26,6 +26,7 @@ async def create_post(
     """Create a new post"""
     try:
         print(f"\n[API] Create post endpoint called by user {current_user.id}")
+        print(f"[API] Post data: title='{post_data.title}', content_length={len(post_data.content)}")
         service = PostService(db)
         post = await service.create_post(post_data, current_user.id)
         print(f"[API] Post created successfully with ID {post.id}")
@@ -35,7 +36,7 @@ async def create_post(
         traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create post"
+            detail=f"Failed to create post: {str(e)}"
         )
 
 
@@ -150,18 +151,24 @@ async def delete_post(
 ):
     """Delete a post (author or admin)"""
     try:
+        print(f"\n[API] Delete post {post_id} by user {current_user.id}")
+        print(f"[API] User is_admin: {current_user.is_admin}")
         service = PostService(db)
+        # Ensure is_admin is bool, not None
+        is_admin = bool(current_user.is_admin) if current_user.is_admin is not None else False
         await service.delete_post(
             post_id=post_id,
             user_id=current_user.id,
-            is_admin=current_user.is_admin,  # Admin can delete any post
+            is_admin=is_admin,
         )
+        print(f"[API] Post {post_id} deleted successfully")
         return None
     except Exception as e:
         print(f"[API] Error deleting post: {e}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete post"
+            detail=f"Failed to delete post: {str(e)}"
         )
 
 
@@ -242,18 +249,24 @@ async def delete_comment(
 ):
     """Delete a comment (author or admin)"""
     try:
+        print(f"\n[API] Delete comment {comment_id} from post {post_id} by user {current_user.id}")
+        print(f"[API] User is_admin: {current_user.is_admin}")
         service = CommentService(db)
+        # Ensure is_admin is bool, not None
+        is_admin = bool(current_user.is_admin) if current_user.is_admin is not None else False
         await service.delete_comment(
             comment_id=comment_id,
             current_user_id=current_user.id,
-            is_admin=current_user.is_admin,  # Admin can delete any comment
+            is_admin=is_admin,
         )
+        print(f"[API] Comment {comment_id} deleted successfully")
         return None
     except Exception as e:
         print(f"[API] Error deleting comment: {e}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete comment"
+            detail=f"Failed to delete comment: {str(e)}"
         )
 
 
