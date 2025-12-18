@@ -44,10 +44,14 @@ async def add_friend(
     try:
         service = FriendshipService(db)
         
-        # Check if user exists
-        friend = await db.users.get_user_by_id(friend_id)
+        # Check if user exists using get_one_or_none
+        friend = await db.users.get_one_or_none(id=friend_id)
         if not friend:
             raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if trying to add self
+        if current_user.id == friend_id:
+            raise HTTPException(status_code=400, detail="Cannot add yourself as friend")
         
         # Check if already friends
         is_already_friend = await service.is_friend(current_user.id, friend_id)
@@ -69,6 +73,8 @@ async def add_friend(
         raise
     except Exception as e:
         print(f"[API] Error adding friend: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to add friend")
 
 
