@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Betony - Платформа социальных блогов</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    :root {
+      --primary: #9333ea;
+      --primary-dark: #7e22ce;
+      --primary-light: #a855f7;
+      --secondary: #ec4899;
+      --danger: #ef4444;
+      --success: #10b981;
+      --bg-dark: #1a0a2e;
+      --bg-light: #16213e;
+      --surface: #0f3460;
+      --text-white: #ffffff;
+      --text-light: #e0e7ff;
+      --text-muted: #a0aec0;
+      --border: #334155;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #2d1b4e 100%);
+      color: var(--text-white);
+      min-height: 100vh;
+    }
+    
+    /* ===== AUTH SCREEN ===== */
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #3d1f5c 100%);
+    }
+    
+    .auth-box {
+      background: linear-gradient(135deg, var(--bg-light) 0%, var(--surface) 100%);
+      border-radius: 24px;
+      box-shadow: 0 25px 50px rgba(147, 51, 234, 0.3);
+      overflow: hidden;
+      max-width: 500px;
+      width: 100%;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+    
+    .auth-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      padding: 50px 30px;
+      text-align: center;
+      color: white;
+    }
+    
+    .auth-logo {
+      font-size: 2.8rem;
+      margin-bottom: 15px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    
+    .auth-subtitle {
+      font-size: 0.95rem;
+      opacity: 0.95;
+    }
+    
+    .auth-content {
+      padding: 40px 30px;
+    }
+    
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .auth-tab {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+    
+    .auth-tab.active {
+      color: var(--primary-light);
+      border-bottom-color: var(--primary-light);
+    }
+    
+    .auth-form {
+      display: none;
+    }
+    
+    .auth-form.active {
+      display: block;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 0.95rem;
+    }
+    
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+      transition: all 0.3s;
+    }
+    
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
+    }
+    
+    .test-data-hint {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+    
+    .test-data-hint strong {
+      color: var(--success);
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    .test-data-hint div {
+      margin: 4px 0;
+      font-family: 'Courier New', monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 6px 8px;
+      border-radius: 4px;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      width: 100%;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(147, 51, 234, 0.4);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      width: auto;
+    }
+    
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .btn-danger:hover:not(:disabled) {
+      background: #dc2626;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    .btn-secondary {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--primary-light);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(168, 85, 247, 0.25);
+    }
+    
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    
+    .btn-liked {
+      background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      color: white;
+      border: 1px solid #dc2626;
+    }
+    
+    .btn-liked:hover:not(:disabled) {
+      background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+    }
+    
+    .form-error {
+      color: var(--danger);
+      font-size: 0.9rem;
+      margin-top: 5px;
+      padding: 10px;
+      background: rgba(239, 68, 68, 0.1);
+      border-radius: 6px;
+      border-left: 3px solid var(--danger);
+    }
+    
+    .form-success {
+      color: var(--success);
+      font-size: 0.9rem;
+      margin-top: 5px;
+      padding: 10px;
+      background: rgba(16, 185, 129, 0.1);
+      border-radius: 6px;
+      border-left: 3px solid var(--success);
+    }
+    
+    .form-loading {
+      color: #3b82f6;
+      font-size: 0.9rem;
+      margin-top: 5px;
+      padding: 10px;
+      background: rgba(59, 130, 246, 0.1);
+      border-radius: 6px;
+      border-left: 3px solid #3b82f6;
+    }
+  </style>
+</head>
+<body>
+  <!-- AUTH SCREEN -->
+  <div id="authScreen" class="auth-container">
+    <div class="auth-box">
+      <div class="auth-header">
+        <div class="auth-logo">🌿 Betony</div>
+        <div class="auth-subtitle">Социальная платформа для блогов</div>
+      </div>
+      <div class="auth-content">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
+          <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
+        </div>
+        
+        <!-- LOGIN FORM -->
+        <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+          <div class="test-data-hint">
+            💡 <strong>Легко войти для тестирования:</strong>
+            <div>👑 Администратор: alice@betony.local / password123</div>
+            <div>👤 Обычный пользователь: test@betony.local / test123</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" required placeholder="your@email.com" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Пароль</label>
+            <input type="password" id="loginPassword" required placeholder="Введите пароль" autocomplete="off">
+          </div>
+          <div id="loginStatus" style="display: none;"></div>
+          <button type="submit" class="btn btn-primary" id="loginBtn">Войти</button>
+        </form>
+        
+        <!-- REGISTER FORM -->
+        <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="regUsername">Имя пользователя</label>
+            <input type="text" id="regUsername" required placeholder="Введите имя">
+          </div>
+          <div class="form-group">
+            <label for="regEmail">Email</label>
+            <input type="email" id="regEmail" required placeholder="your@email.com">
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Пароль</label>
+            <input type="password" id="regPassword" required placeholder="Введите пароль">
+          </div>
+          <div class="form-group">
+            <label for="regPasswordConfirm">Подтвердите пароль</label>
+            <input type="password" id="regPasswordConfirm" required placeholder="Повторите пароль">
+          </div>
+          <div id="regStatus" style="display: none;"></div>
+          <button type="submit" class="btn btn-primary" id="regBtn">Зарегистрироваться</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- PLACEHOLDER FOR MAIN APP - WILL BE ADDED LATER -->
+  <div id="appScreen" class="app-container" style="display:none;">
+    <div style="padding: 40px; text-align: center; color: white;">
+      <h1>Главное приложение</h1>
+      <p>Приложение загружается...</p>
+    </div>
+  </div>
+  
+  <script>
+    // Основной скрипт будет добавлен через скрипт add_guest_mode.py
+    console.log('Betony platform loaded');
+  </script>
+</body>
+</html>
