@@ -1,122 +1,137 @@
 from app.database.db_manager import DBManager
 from app.schemes.posts import PostCreate, PostUpdate, PostResponse
-from app.exceptions.exceptions import PostNotFound, Forbidden
+from app.exceptions.exceptions import PostNotFound, PostNotOwner
 
 
 class PostService:
     def __init__(self, db: DBManager):
         self.db = db
 
-    async def create_post(self, post_data: PostCreate, user_id: int):
-        """Create a new post"""
-        try:
-            post = await self.db.posts.create_post(post_data, user_id)
-            await self.db.commit()
-            return post
-        except Exception as e:
-            print(f"[PostService] Error creating post: {e}")
-            raise
+    async def create_post(self, post_data: PostCreate, user_id: int) -> PostResponse:
+        post = await self.db.posts.create_post(user_id, post_data.title, post_data.content)
+        await self.db.commit()
+        
+        # Get user info for author fields
+        user = await self.db.users.get_one_or_none(id=user_id)
+        
+        return PostResponse(
+            id=post.id,
+            title=post.title,
+            content=post.content,
+            user_id=post.user_id,
+            author_name=user.name if user else None,
+            author_email=user.email if user else None,
+            created_at=post.created_at,
+            updated_at=post.updated_at,
+            likes_count=0
+        )
 
-    async def get_post(self, post_id: int):
-        """Get a specific post by ID"""
-        try:
-            post = await self.db.posts.get_post_by_id(post_id)
-            if not post:
-                raise PostNotFound()
-            
-            # Get likes count if available
-            try:
-                likes_count = await self.db.likes.get_post_likes_count(post_id)
-                if hasattr(post, 'likes_count'):
-                    post.likes_count = likes_count
-            except:
-                pass
-            
-            return post
-        except PostNotFound:
-            raise
-        except Exception as e:
-            print(f"[PostService] Error getting post: {e}")
-            raise
+    async def get_post(self, post_id: int) -> PostResponse:
+        post = await self.db.posts.get_post_by_id(post_id)
+        if not post:
+            raise PostNotFound()
+        
+        # Get likes count
+        likes_count = await self.db.likes.get_post_likes_count(post_id)
+        
+        # Get user info
+        user = await self.db.users.get_one_or_none(id=post.user_id)
+        
+        return PostResponse(
+            id=post.id,
+            title=post.title,
+            content=post.content,
+            user_id=post.user_id,
+            author_name=user.name if user else None,
+            author_email=user.email if user else None,
+            created_at=post.created_at,
+            updated_at=post.updated_at,
+            likes_count=likes_count
+        )
 
-    async def get_all_posts(self, skip: int = 0, limit: int = 10):
-        """Get all posts with pagination"""
-        try:
-            posts = await self.db.posts.get_all_posts(skip, limit)
-            if not posts:
-                return []
+    async def get_all_posts(self, skip: int = 0, limit: int = 20) -> list[PostResponse]:
+        posts = await self.db.posts.get_all_posts(skip, limit)
+        result = []
+        
+        for post in posts:
+            likes_count = await self.db.likes.get_post_likes_count(post.id)
+            user = await self.db.users.get_one_or_none(id=post.user_id)
             
-            # Try to add likes count if method available
-            result = []
-            for post in posts:
-                try:
-                    likes_count = await self.db.likes.get_post_likes_count(post.id)
-                    if hasattr(post, 'likes_count'):
-                        post.likes_count = likes_count
-                except:
-                    pass
-                result.append(post)
-            
-            return result
-        except Exception as e:
-            print(f"[PostService] Error getting all posts: {e}")
-            raise
+            result.append(PostResponse(
+                id=post.id,
+                title=post.title,
+                content=post.content,
+                user_id=post.user_id,
+                author_name=user.name if user else None,
+                author_email=user.email if user else None,
+                created_at=post.created_at,
+                updated_at=post.updated_at,
+                likes_count=likes_count
+            ))
+        
+        return result
 
-    async def get_user_posts(self, user_id: int, skip: int = 0, limit: int = 10):
-        """Get all posts by a specific user"""
-        try:
-            posts = await self.db.posts.get_user_posts(user_id, skip, limit)
-            if not posts:
-                return []
+    async def get_user_posts(self, user_id: int, skip: int = 0, limit: int = 20) -> list[PostResponse]:
+        posts = await self.db.posts.get_user_posts(user_id, skip, limit)
+        result = []
+        
+        # Get user info once
+        user = await self.db.users.get_one_or_none(id=user_id)
+        
+        for post in posts:
+            likes_count = await self.db.likes.get_post_likes_count(post.id)
             
-            # Try to add likes count if method available
-            result = []
-            for post in posts:
-                try:
-                    likes_count = await self.db.likes.get_post_likes_count(post.id)
-                    if hasattr(post, 'likes_count'):
-                        post.likes_count = likes_count
-                except:
-                    pass
-                result.append(post)
-            
-            return result
-        except Exception as e:
-            print(f"[PostService] Error getting user posts: {e}")
-            raise
+            result.append(PostResponse(
+                id=post.id,
+                title=post.title,
+                content=post.content,
+                user_id=post.user_id,
+                author_name=user.name if user else None,
+                author_email=user.email if user else None,
+                created_at=post.created_at,
+                updated_at=post.updated_at,
+                likes_count=likes_count
+            ))
+        
+        return result
 
-    async def update_post(self, post_id: int, post_data: PostUpdate, current_user_id: int):
-        """Update a post"""
-        try:
-            post = await self.db.posts.get_post_by_id(post_id)
-            if not post:
-                raise PostNotFound()
-            if post.user_id != current_user_id:
-                raise Forbidden()
-            
-            updated_post = await self.db.posts.update_post(post_id, post_data)
-            await self.db.commit()
-            return updated_post
-        except (PostNotFound, Forbidden):
-            raise
-        except Exception as e:
-            print(f"[PostService] Error updating post: {e}")
-            raise
+    async def update_post(self, post_id: int, post_data: PostUpdate, user_id: int) -> PostResponse:
+        post = await self.db.posts.get_post_by_id(post_id)
+        if not post:
+            raise PostNotFound()
+        
+        if post.user_id != user_id:
+            raise PostNotOwner()
+        
+        updated_post = await self.db.posts.update_post(post_id, post_data.title, post_data.content)
+        await self.db.commit()
+        
+        likes_count = await self.db.likes.get_post_likes_count(post_id)
+        user = await self.db.users.get_one_or_none(id=user_id)
+        
+        return PostResponse(
+            id=updated_post.id,
+            title=updated_post.title,
+            content=updated_post.content,
+            user_id=updated_post.user_id,
+            author_name=user.name if user else None,
+            author_email=user.email if user else None,
+            created_at=updated_post.created_at,
+            updated_at=updated_post.updated_at,
+            likes_count=likes_count
+        )
 
-    async def delete_post(self, post_id: int, current_user_id: int) -> bool:
-        """Delete a post"""
-        try:
-            post = await self.db.posts.get_post_by_id(post_id)
-            if not post:
-                raise PostNotFound()
-            if post.user_id != current_user_id:
-                raise Forbidden()
-            
-            result = await self.db.posts.delete_post(post_id)
-            await self.db.commit()
-            return result
-        except (PostNotFound, Forbidden):
-            raise
-        except Exception as e:
-            print(f"[PostService] Error deleting post: {e}")
-            raise
+    async def delete_post(self, post_id: int, user_id: int) -> bool:
+        post = await self.db.posts.get_post_by_id(post_id)
+        if not post:
+            raise PostNotFound()
+        
+        if post.user_id != user_id:
+            raise PostNotOwner()
+        
+        success = await self.db.posts.delete_post_by_id(post_id)
+        if not success:
+            raise PostNotFound()
+        
+        await self.db.commit()
+        return True
