@@ -1,105 +1,187 @@
 #!/usr/bin/env python3
 """
-Initialize database with exactly 3 test accounts:
-1. Admin account
-2. Regular user account  
-3. Guest mode (no real account needed, but info for reference)
-
-Usage: python init_db.py
+Initialize the database with test data and admin accounts.
+Runs Alembic migrations first, then seeds the database.
 """
 
 import asyncio
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select
-from app.models.users import UserModel
-from app.models.posts import PostModel
-from app.models.comments import CommentModel
-from app.models.likes import LikeModel
-from app.models.friends import FriendModel
-from app.database.base import Base
-from app.config import settings
-from app.utils.security import hash_password
+import sys
+from pathlib import Path
 
-async def init_database():
-    """Initialize database with test data"""
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
+
+from app.database.database import engine, get_db
+from app.models.roles import RoleModel
+from app.models.users import UserModel
+from app.core.security import get_password_hash
+from app.database.base import Base
+
+
+def print_header(text):
+    """Print formatted header."""
+    print("\n" + "="*80)
+    print(f"  {text}")
+    print("="*80)
+
+
+def print_section(text):
+    """Print section header."""
+    print(f"\n[{text}]", end=" ")
+
+
+def init_database():
+    """Initialize database with Alembic and test data."""
     
-    # Create engine
-    engine = create_async_engine(settings.get_db_url, echo=False)
+    print_header("BETONY DATABASE INITIALIZATION")
     
-    print("\n[DATABASE] Initializing database...\n")
+    # Step 1: Run Alembic migrations
+    print_section("MIGRATIONS")
+    print("Running Alembic migrations...")
     
-    # Drop all tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        print("[DROP] Dropped all tables")
-    
-    # Create all tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        print("[CREATE] Created all tables")
-    
-    # Create session
-    async_session = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-    
-    async with async_session() as session:
-        # ===== CREATE ACCOUNTS =====
-        print("\n[ACCOUNTS] Creating 3 test accounts...\n")
+    try:
+        import subprocess
         
-        # 1. ADMIN account
-        admin = UserModel(
-            name="Администратор",
-            email="admin@betony.local",
-            hashed_password=hash_password("admin123"),
-            is_admin=True
+        # Run alembic upgrade head
+        result = subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "heads"],
+            cwd=Path(__file__).parent,
+            capture_output=True,
+            text=True,
+            timeout=30
         )
-        session.add(admin)
-        await session.flush()  # Get ID
-        print(f"✅ Admin: admin@betony.local (password: admin123) [ID: {admin.id}]")
         
-        # 2. REGULAR USER account
-        user = UserModel(
-            name="Тестовый Пользователь",
-            email="test@betony.local",
-            hashed_password=hash_password("test123"),
-            is_admin=False
-        )
-        session.add(user)
-        await session.flush()  # Get ID
-        print(f"✅ User: test@betony.local (password: test123) [ID: {user.id}]")
-        
-        # 3. GUEST MODE (info only - no real account in DB)
-        print(f"✅ Guest: guest@betony.local (no password needed, use 'Guest Mode' button)\n")
-        
-        # Commit accounts
-        await session.commit()
-        
-        print("[SUCCESS] All accounts created successfully!\n")
-        print("═" * 60)
-        print("ACCOUNT CREDENTIALS:")
-        print("═" * 60)
-        print("\n1️⃣  ADMIN ACCOUNT (Full privileges)")
-        print("   Email: admin@betony.local")
-        print("   Password: admin123")
-        print("   Can: Delete any posts/comments, see admin features")
-        print("\n2️⃣  REGULAR USER ACCOUNT (Normal user)")
-        print("   Email: test@betony.local")
-        print("   Password: test123")
-        print("   Can: Create posts, comment, like, manage own content")
-        print("\n3️⃣  GUEST MODE (No login needed)")
-        print("   Click: 'Гостевой режим' button on login page")
-        print("   Can: View posts and comments (read-only)")
-        print("\n" + "═" * 60)
-        print("\nDatabase initialized! You can now start the app.\n")
+        if result.returncode != 0:
+            print(f"\n⚠️  Warning: Alembic had issues:")
+            print(result.stderr)
+        else:
+            print("✅ Alembic migrations applied successfully")
+            if result.stdout:
+                for line in result.stdout.split('\n'):
+                    if line.strip() and ('✅' in line or 'Running upgrade' in line):
+                        print(f"   {line}")
+    except subprocess.TimeoutExpired:
+        print("❌ Alembic migrations timed out")
+        return False
+    except Exception as e:
+        print(f"❌ Error running migrations: {e}")
+        return False
     
-    await engine.dispose()
+    # Step 2: Create tables (if migrations didn't work)
+    print_section("DATABASE")
+    try:
+        with engine.begin() as connection:
+            # Try to create tables using SQLAlchemy
+            Base.metadata.create_all(engine)
+            print("✅ Database tables created")
+    except Exception as e:
+        print(f"❌ Error creating tables: {e}")
+        return False
+    
+    # Step 3: Seed test accounts
+    print_section("ACCOUNTS")
+    print("Creating 3 test accounts...\n")
+    
+    try:
+        with Session(engine) as session:
+            # Check if accounts already exist
+            existing_admin = session.execute(
+                select(UserModel).where(UserModel.email == "admin@betony.local")
+            ).first()
+            
+            if existing_admin:
+                print("ℹ️  Test accounts already exist, skipping...")
+                print("\nℹ️  Existing accounts:")
+                
+                # List existing accounts
+                users = session.execute(select(UserModel)).scalars().all()
+                for user in users:
+                    role = "👑 Admin" if user.is_admin else "👤 User"
+                    print(f"   {role}: {user.email} (ID: {user.id})")
+                
+                return True
+            
+            # Create default role
+            existing_role = session.execute(
+                select(RoleModel).where(RoleModel.name == "user")
+            ).first()
+            
+            if not existing_role:
+                user_role = RoleModel(name="user")
+                session.add(user_role)
+                session.flush()
+            else:
+                user_role = existing_role[0]
+            
+            # Create admin account
+            admin = UserModel(
+                name="Admin",
+                email="admin@betony.local",
+                hashed_password=get_password_hash("admin123"),
+                is_admin=True,
+                role_id=user_role.id
+            )
+            session.add(admin)
+            session.flush()
+            print(f"✅ Admin: admin@betony.local (password: admin123) [ID: {admin.id}]")
+            
+            # Create regular user account
+            user = UserModel(
+                name="Test User",
+                email="test@betony.local",
+                hashed_password=get_password_hash("test123"),
+                is_admin=False,
+                role_id=user_role.id
+            )
+            session.add(user)
+            session.flush()
+            print(f"✅ User: test@betony.local (password: test123) [ID: {user.id}]")
+            
+            # Create guest account (no password)
+            guest = UserModel(
+                name="Guest",
+                email="guest@betony.local",
+                hashed_password=get_password_hash("guest_no_login"),
+                is_admin=False,
+                role_id=user_role.id
+            )
+            session.add(guest)
+            session.flush()
+            print(f"✅ Guest: guest@betony.local (no password needed)\n")
+            
+            session.commit()
+            print("✅ All accounts created successfully!")
+            
+    except Exception as e:
+        print(f"❌ Error creating accounts: {e}")
+        return False
+    
+    # Step 4: Print credentials
+    print("\n" + "="*80)
+    print("ACCOUNT CREDENTIALS:")
+    print("="*80)
+    print("""
+1️⃣  ADMIN ACCOUNT (Full privileges)
+   Email: admin@betony.local
+   Password: admin123
+
+2️⃣  REGULAR USER ACCOUNT (Normal user)
+   Email: test@betony.local
+   Password: test123
+
+3️⃣  GUEST MODE (No login needed)
+   Click: 'Гостевой режим' button on login
+""")
+    print("="*80)
+    print("\n✅ Database initialization complete!\n")
+    
+    return True
+
 
 if __name__ == "__main__":
-    print("\n" + "█" * 60)
-    print("  BETONY DATABASE INITIALIZATION")
-    print("█" * 60)
-    
-    asyncio.run(init_database())
+    success = init_database()
+    sys.exit(0 if success else 1)
