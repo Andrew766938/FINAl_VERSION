@@ -237,9 +237,12 @@ async function loadFeed() {
         const postEl = await createPostElement(post);
         container.appendChild(postEl);
       }
+    } else {
+      container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке постов</p></div>';
     }
   } catch (err) {
     console.error('Error loading feed:', err);
+    container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке</p></div>';
   }
 }
 
@@ -327,7 +330,7 @@ async function createPostElement(post) {
     </div>
     <div class="post-actions">
       <button class="btn-action ${isLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="toggleLike(${post.id})" style="${isGuestMode ? 'opacity: 0.5; cursor: not-allowed;' : ''}${isLiked ? 'background: rgba(236, 72, 153, 0.2); color: var(--secondary); border-color: rgba(236, 72, 153, 0.3);' : ''}" ${isGuestMode ? 'disabled' : ''} title="${isGuestMode ? 'Недоступно в гостевом режиме' : ''}">❤️ Нравится</button>
-      <button class="btn-action" onclick="toggleComments(${post.id})" style="${isGuestMode ? 'opacity: 0.8;' : ''}">💬 Комментарии</button>
+      <button class="btn-action" id="comments-btn-${post.id}" onclick="toggleComments(${post.id})" style="${isGuestMode ? 'opacity: 0.8;' : ''}" ${isGuestMode ? 'disabled' : ''}>💬 Комментарии</button>
     </div>
     <div class="comments-section" id="comments-${post.id}" style="display:none;">
       <div class="comments-list" id="comments-list-${post.id}"></div>
@@ -369,6 +372,7 @@ async function addFriend(userId, userName) {
     }
   } catch (err) {
     console.error('Error adding friend:', err);
+    alert('❌ Ошибка при добавлении в друзья');
   }
 }
 
@@ -384,15 +388,22 @@ async function deletePost(postId) {
     if (response.ok) {
       loadFeed();
     } else {
+      console.error('Error deleting post:', response.status);
       alert('❌ Не удалось удалить пост');
     }
   } catch (err) {
     console.error('Error deleting post:', err);
+    alert('❌ Ошибка при удалении поста');
   }
 }
 
 function toggleComments(postId) {
   const section = document.getElementById(`comments-${postId}`);
+  if (!section) {
+    console.error(`Comments section not found for post ${postId}`);
+    return;
+  }
+  
   const isHidden = section.style.display === 'none';
   section.style.display = isHidden ? 'block' : 'none';
   
@@ -403,6 +414,11 @@ function toggleComments(postId) {
 
 async function loadComments(postId) {
   const list = document.getElementById(`comments-list-${postId}`);
+  if (!list) {
+    console.error(`Comments list not found for post ${postId}`);
+    return;
+  }
+  
   list.innerHTML = '<p style="text-align:center; color: var(--text-muted);">💬 Загружаю комментарии...</p>';
   
   try {
@@ -440,9 +456,13 @@ async function loadComments(postId) {
         
         list.appendChild(commentEl);
       }
+    } else {
+      console.error('Error loading comments:', response.status);
+      list.innerHTML = '<p style="text-align:center; color: var(--error);">❌ Ошибка при загрузке комментариев</p>';
     }
   } catch (err) {
     console.error('Error loading comments:', err);
+    list.innerHTML = '<p style="text-align:center; color: var(--error);">❌ Ошибка при загрузке</p>';
   }
 }
 
@@ -453,9 +473,17 @@ async function addComment(postId) {
   }
   
   const input = document.getElementById(`comment-input-${postId}`);
+  if (!input) {
+    console.error(`Comment input not found for post ${postId}`);
+    return;
+  }
+  
   const content = input.value.trim();
   
-  if (!content) return;
+  if (!content) {
+    alert('⚠️ Напишите комментарий');
+    return;
+  }
   
   try {
     const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
@@ -470,9 +498,13 @@ async function addComment(postId) {
     if (response.ok) {
       input.value = '';
       loadComments(postId);
+    } else {
+      console.error('Error adding comment:', response.status);
+      alert('❌ Ошибка при добавлении комментария');
     }
   } catch (err) {
     console.error('Error adding comment:', err);
+    alert('❌ Ошибка при отправке комментария');
   }
 }
 
@@ -488,10 +520,12 @@ async function deleteComment(postId, commentId) {
     if (response.ok) {
       loadComments(postId);
     } else {
+      console.error('Error deleting comment:', response.status);
       alert('❌ Не удалось удалить комментарий');
     }
   } catch (err) {
     console.error('Error deleting comment:', err);
+    alert('❌ Ошибка при удалении комментария');
   }
 }
 
@@ -504,6 +538,12 @@ async function toggleLike(postId) {
   try {
     const btn = document.getElementById(`like-btn-${postId}`);
     const likesCountEl = document.getElementById(`likes-count-${postId}`);
+    
+    if (!btn || !likesCountEl) {
+      console.error(`Like button or counter not found for post ${postId}`);
+      return;
+    }
+    
     const isLiked = await isPostLiked(postId);
     
     const response = await fetch(`${API_URL}/posts/${postId}/like`, {
@@ -536,9 +576,13 @@ async function toggleLike(postId) {
         const post = await getPost.json();
         likesCountEl.textContent = `❤️ ${post.likes_count || 0} лайков`;
       }
+    } else {
+      console.error('Error toggling like:', response.status);
+      alert('❌ Ошибка при добавлении лайка');
     }
   } catch (err) {
     console.error('Error toggling like:', err);
+    alert('❌ Ошибка при обработке лайка');
   }
 }
 
