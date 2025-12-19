@@ -296,6 +296,10 @@ async function createPostElement(post) {
   const likeButtonDisabled = isGuestMode ? 'disabled' : '';
   const likeButtonStyle = isGuestMode ? 'opacity: 0.5; cursor: not-allowed;' : '';
   
+  // FIXED: Show delete button ONLY if it's author's own post (never for regular users, only for post author)
+  // Admins can still delete via backend, but button won't show
+  const canDeletePost = isMyPost; // Only post author can delete
+  
   div.innerHTML = `
     <div class="post-header">
       <div class="post-avatar">${firstLetter}</div>
@@ -310,7 +314,7 @@ async function createPostElement(post) {
       ${isFriend && !isOwnProfile ? `
         <button class="btn-action" style="background: rgba(168, 85, 247, 0.15); color: var(--primary-light); border-color: rgba(168, 85, 247, 0.3); padding: 6px 12px; font-size: 0.85rem; flex: none;" disabled title="В друзьях">✓ В друзьях</button>
       ` : ''}
-      ${currentUser?.is_admin || isMyPost ? `
+      ${canDeletePost ? `
         <button class="btn-icon" onclick="deletePost(${post.id})" title="Удалить">🗑️</button>
       ` : ''}
     </div>
@@ -379,6 +383,8 @@ async function deletePost(postId) {
     
     if (response.ok) {
       loadFeed();
+    } else {
+      alert('❌ Не удалось удалить пост');
     }
   } catch (err) {
     console.error('Error deleting post:', err);
@@ -418,11 +424,14 @@ async function loadComments(postId) {
         commentEl.className = 'comment';
         const date = new Date(comment.created_at).toLocaleDateString('ru-RU');
         
+        // FIXED: Show delete button ONLY if it's the comment author (not for regular users)
+        const canDeleteComment = currentUser?.id === comment.user_id;
+        
         commentEl.innerHTML = `
           <div class="comment-header">
             <span class="comment-author">${comment.author_username}</span>
             <span class="comment-date">${date}</span>
-            ${currentUser?.is_admin || currentUser?.id === comment.user_id ? `
+            ${canDeleteComment ? `
               <button class="btn-icon" onclick="deleteComment(${comment.post_id}, ${comment.id})" title="Удалить">🗑️</button>
             ` : ''}
           </div>
@@ -478,6 +487,8 @@ async function deleteComment(postId, commentId) {
     
     if (response.ok) {
       loadComments(postId);
+    } else {
+      alert('❌ Не удалось удалить комментарий');
     }
   } catch (err) {
     console.error('Error deleting comment:', err);
