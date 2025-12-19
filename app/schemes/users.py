@@ -12,6 +12,7 @@ class SUserAddRequest(BaseModel):
     email: str
     password: str
     role_id: int | None = 1
+    is_admin: bool | None = False  # Добавлено поле is_admin
 
     @field_validator('name')
     @classmethod
