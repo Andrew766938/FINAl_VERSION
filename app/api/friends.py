@@ -1,6 +1,6 @@
 """Friends API endpoints"""
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.api.dependencies import DBDep, get_current_user
 from app.models.users import UserModel
@@ -162,6 +162,7 @@ async def get_user_profile(
 ):
     """
     Get user profile with statistics
+    FIXED: Correctly count posts, friends, and likes using func.count()
     """
     try:
         result = await db.session.execute(
@@ -174,25 +175,25 @@ async def get_user_profile(
                 detail="User not found"
             )
         
-        # Count posts
+        # Count posts - FIXED: Use func.count() for accurate count
         from app.models.posts import PostModel
         posts_result = await db.session.execute(
-            select(PostModel).where(PostModel.user_id == user_id)
+            select(func.count(PostModel.id)).where(PostModel.user_id == user_id)
         )
-        posts_count = len(posts_result.scalars().all())
+        posts_count = posts_result.scalar() or 0
         
-        # Count friends
+        # Count friends - FIXED: Use func.count() for accurate count
         friends_result = await db.session.execute(
-            select(FriendshipModel).where(FriendshipModel.user_id == user_id)
+            select(func.count(FriendshipModel.id)).where(FriendshipModel.user_id == user_id)
         )
-        friends_count = len(friends_result.scalars().all())
+        friends_count = friends_result.scalar() or 0
         
-        # Count likes
+        # Count likes - FIXED: Use func.count() for accurate count
         from app.models.likes import LikeModel
         likes_result = await db.session.execute(
-            select(LikeModel).where(LikeModel.user_id == user_id)
+            select(func.count(LikeModel.id)).where(LikeModel.user_id == user_id)
         )
-        likes_count = len(likes_result.scalars().all())
+        likes_count = likes_result.scalar() or 0
         
         return {
             "id": user.id,
@@ -208,6 +209,8 @@ async def get_user_profile(
         raise
     except Exception as e:
         print(f"[API] Error getting user profile: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get user profile"
