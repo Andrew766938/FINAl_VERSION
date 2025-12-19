@@ -296,13 +296,8 @@ async function createPostElement(post) {
   const isLiked = await isPostLiked(post.id);
   const isOwnProfile = currentUser?.id === post.user_id;
   
-  // Guest mode: disable like button
-  const likeButtonDisabled = isGuestMode ? 'disabled' : '';
-  const likeButtonStyle = isGuestMode ? 'opacity: 0.5; cursor: not-allowed;' : '';
-  
-  // FIXED: Show delete button ONLY if it's author's own post (never for regular users, only for post author)
-  // Admins can still delete via backend, but button won't show
-  const canDeletePost = isMyPost; // Only post author can delete
+  // Admin or post author can delete
+  const canDeletePost = isMyPost || currentUser?.is_admin;
   
   div.innerHTML = `
     <div class="post-header">
@@ -441,8 +436,8 @@ async function loadComments(postId) {
         commentEl.className = 'comment';
         const date = new Date(comment.created_at).toLocaleDateString('ru-RU');
         
-        // FIXED: Show delete button ONLY if it's the comment author (not for regular users)
-        const canDeleteComment = currentUser?.id === comment.user_id;
+        // Admin or comment author can delete
+        const canDeleteComment = (currentUser?.id === comment.user_id) || currentUser?.is_admin;
         
         commentEl.innerHTML = `
           <div class="comment-header">
