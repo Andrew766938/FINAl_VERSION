@@ -52,6 +52,7 @@ async function handleRegister(event) {
   const email = document.getElementById('regEmail').value;
   const password = document.getElementById('regPassword').value;
   const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+  const isAdmin = document.getElementById('regAdminCheckbox').checked;
   const btn = document.getElementById('regBtn');
   const status = document.getElementById('regStatus');
   
@@ -71,7 +72,7 @@ async function handleRegister(event) {
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, is_admin: isAdmin })
     });
     
     if (response.ok) {
@@ -458,7 +459,7 @@ async function loadComments(postId) {
       }
     } else {
       console.error('Error loading comments:', response.status);
-      list.innerHTML = '<p style="text-align:center; color: var(--error);">❌ Ошибка при загрузке комментариев</p>';
+      list.innerHTML = '<p style="text-align:center; color: var(--error);">❌ Ошибка при загружке комментариев</p>';
     }
   } catch (err) {
     console.error('Error loading comments:', err);
@@ -706,26 +707,20 @@ async function loadAccount() {
   container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю профиль...</p></div>';
   
   try {
-    // FIXED: Added error handling and logging for profile loading
-    console.log(`[DEBUG] Loading profile for user ID: ${currentUser.id}`);
-    console.log(`[DEBUG] Request URL: ${API_URL}/auth/users/${currentUser.id}`);
-    console.log(`[DEBUG] Token present: ${!!localStorage.getItem('token')}`);
-    
     const response = await fetch(`${API_URL}/auth/users/${currentUser.id}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     
-    console.log(`[DEBUG] Response status: ${response.status}`);
-    
     if (response.ok) {
       const profile = await response.json();
-      console.log(`[DEBUG] Profile loaded successfully:`, profile);
       const firstLetter = (profile.name || 'U').charAt(0).toUpperCase();
       
-      // Set default values if stats are missing
       const postsCount = profile.posts_count ?? 0;
       const friendsCount = profile.friends_count ?? 0;
       const likesCount = profile.likes_count ?? 0;
+      
+      // Status label: show only for admin
+      const statusLabel = profile.is_admin ? '<div style="color: var(--secondary); font-weight: 600;">👑 Администратор</div>' : '<div style="color: var(--text-light); font-weight: 500;">👤 Пользователь</div>';
       
       container.innerHTML = `
         <div class="account-section">
@@ -733,7 +728,7 @@ async function loadAccount() {
           <div class="account-info">
             <div class="account-name">${profile.name}</div>
             <div class="account-email">${profile.email}</div>
-            ${profile.is_admin ? '<div style="color: var(--secondary); font-weight: 600;">👑 Администратор</div>' : ''}
+            ${statusLabel}
             <div class="account-stats">
               <div class="stat">
                 <div class="stat-value">${postsCount}</div>
@@ -752,14 +747,11 @@ async function loadAccount() {
         </div>
       `;
     } else {
-      const errorText = await response.text();
-      console.error(`[DEBUG] Error response: ${errorText}`);
       container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке профиля</p></div>';
     }
   } catch (err) {
     console.error('Error loading account:', err);
-    console.error('[DEBUG] Error details:', err.message);
-    container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке профиля</p></div>';
+    container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загружке профиля</p></div>';
   }
 }
 
