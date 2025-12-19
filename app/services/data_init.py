@@ -74,9 +74,9 @@ async def init_sample_data():
     """
     Initialize database with sample data
     This includes:
-    - Test user account
-    - Admin user
-    - Sample users (15)
+    - Test user account (REGULAR USER, NOT ADMIN)
+    - Admin user (alice@betony.local only)
+    - Sample users (14 regular)
     - Sample posts (50)
     - Sample likes
     - Sample comments
@@ -108,41 +108,42 @@ async def init_sample_data():
             
             print("[INIT] 🚀 Starting sample data initialization...")
             
-            # Create test user first
+            # Create TEST user first (REGULAR USER, NOT ADMIN!)
             auth_service = AuthService(db)
             test_user = None
             try:
-                print(f"[INIT] 🧪 Creating TEST user: Тестовый Пользователь")
+                print(f"[INIT] 🧪 Creating TEST user: Тестовый Пользователь (REGULAR USER)")
                 test_user, token = await auth_service.register_and_login(
                     email="test@betony.local",
                     password="test123",
                     name="Тестовый Пользователь"
                 )
-                print(f"[INIT] ✅ TEST user created: {test_user.name} (ID: {test_user.id})")
+                # TEST USER REMAINS REGULAR - is_admin stays False by default!
+                print(f"[INIT] ✅ TEST user created (REGULAR): {test_user.name} (ID: {test_user.id})")
             except Exception as e:
                 print(f"[INIT] ❌ Error creating test user: {e}")
                 import traceback
                 traceback.print_exc()
             
-            # Create sample users - expanded to 15 users + 1 admin
-            # ADMIN USER
+            # Create ADMIN USER - only alice@betony.local
             admin_user = None
             try:
-                print(f"[INIT] 👑 Creating ADMIN user: Админ Бетони")
+                print(f"[INIT] 👑 Creating ADMIN user: Алиса Джонсон (ADMIN ONLY!)")
                 admin_user, token = await auth_service.register_and_login(
                     email="alice@betony.local",
                     password="password123",
                     name="Алиса Джонсон"
                 )
-                # Set admin flag
+                # Set admin flag ONLY for alice@betony.local
                 admin_user.is_admin = True
                 await db.session.commit()
-                print(f"[INIT] ✅ ADMIN user created: {admin_user.name} (ID: {admin_user.id})")
+                print(f"[INIT] ✅ ADMIN user created (WITH ADMIN PRIVILEGES): {admin_user.name} (ID: {admin_user.id})")
             except Exception as e:
                 print(f"[INIT] ❌ Error creating admin user: {e}")
                 import traceback
                 traceback.print_exc()
             
+            # Create regular sample users (14 more)
             users_data = [
                 {"email": "bob@betony.local", "password": "password123", "name": "Боб Смит"},
                 {"email": "charlie@betony.local", "password": "password123", "name": "Чарли Браун"},
@@ -154,23 +155,27 @@ async def init_sample_data():
                 {"email": "ian@betony.local", "password": "password123", "name": "Ян Вилсон"},
                 {"email": "julia@betony.local", "password": "password123", "name": "Юлия Андерсон"},
                 {"email": "kevin@betony.local", "password": "password123", "name": "Кевин Тейлор"},
-                {"email": "lisa@betony.local", "password": "password123", "name": "Лиза Томас"},
+                {"email": "lisa@betony.local", "password": "password123", "name": "Лиса Томас"},
                 {"email": "michael@betony.local", "password": "password123", "name": "Майкл Ли"},
                 {"email": "nina@betony.local", "password": "password123", "name": "Нина Уайт"},
                 {"email": "oliver@betony.local", "password": "password123", "name": "Оливер Харрис"},
             ]
             
             users = [admin_user] if admin_user else []
+            if test_user:
+                users.append(test_user)
+            
             for user_data in users_data:
                 try:
-                    print(f"[INIT] 👤 Creating user: {user_data['name']}")
+                    print(f"[INIT] 👤 Creating user: {user_data['name']} (REGULAR)")
                     user, token = await auth_service.register_and_login(
                         email=user_data["email"],
                         password=user_data["password"],
                         name=user_data["name"]
                     )
+                    # All other users are regular - is_admin stays False by default
                     users.append(user)
-                    print(f"[INIT] ✅ User created successfully: {user.name} (ID: {user.id})")
+                    print(f"[INIT] ✅ User created successfully (REGULAR): {user.name} (ID: {user.id})")
                 except Exception as e:
                     print(f"[INIT] ❌ Error creating user {user_data['name']}: {e}")
             
@@ -257,13 +262,13 @@ async def init_sample_data():
             print(f"\n{'='*60}")
             print(f"[INIT] ✅ Sample data initialization completed successfully!")
             print(f"{'='*60}")
-            print(f"[INIT] Created {len(users)} users")
+            print(f"[INIT] Created {len(users)} users (1 ADMIN + {len(users)-1} REGULAR)")
             print(f"[INIT] Created {len(posts)} posts")
             print(f"[INIT] Created {like_count} likes")
             print(f"[INIT] Created {comment_count} comments")
             print(f"\n[INIT] 📌 Test credentials:")
-            print(f"[INIT] Admin/User    - Email: alice@betony.local | Password: password123")
-            print(f"[INIT] TEST user     - Email: test@betony.local | Password: test123")
+            print(f"[INIT] ADMIN USER   - Email: alice@betony.local | Password: password123 | Privileges: YES (is_admin=True)")
+            print(f"[INIT] REGULAR USER - Email: test@betony.local | Password: test123 | Privileges: NO (is_admin=False)")
             print(f"{'='*60}")
             
     except Exception as e:
