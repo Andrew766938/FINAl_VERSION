@@ -80,10 +80,10 @@ class AuthService(BaseService):
             print(f"[AUTH] Error counting users: {e}")
             return 0
 
-    async def register_and_login(self, email: str, password: str, name: str):
+    async def register_and_login(self, email: str, password: str, name: str, is_admin: bool = False):
         """
         Register user and return user + token
-        First user becomes admin automatically
+        First user becomes admin automatically, or use is_admin flag
         """
         try:
             print(f"[AUTH] Registering: {email}")
@@ -101,7 +101,11 @@ class AuthService(BaseService):
             
             # Count existing users - first user becomes admin
             user_count = await self.count_users()
-            is_admin = user_count == 0
+            
+            # First user is always admin, or use is_admin flag from request
+            final_is_admin = (user_count == 0) or is_admin
+            
+            print(f"[AUTH] User count: {user_count}, is_admin flag: {is_admin}, final_is_admin: {final_is_admin}")
             
             # Create user
             hashed = self.hash_password(password)
@@ -110,12 +114,12 @@ class AuthService(BaseService):
                 email=email,
                 hashed_password=hashed,
                 role_id=1,
-                is_admin=is_admin
+                is_admin=final_is_admin
             )
             self.db.session.add(user)
             await self.db.commit()
             
-            print(f"[AUTH] ✅ User registered: {user.id}, is_admin: {is_admin}")
+            print(f"[AUTH] ✅ User registered: {user.id}, is_admin: {final_is_admin}")
             
             # Create token
             token = self.create_token(user.id)
