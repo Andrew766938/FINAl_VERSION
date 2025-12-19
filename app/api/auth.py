@@ -39,7 +39,7 @@ async def register_user(
                 detail="Email, password, and name are required"
             )
         
-        service = AuthService(db.session)
+        service = AuthService(db)  # Pass DBManager, not session
         user, token = await service.register_and_login(data.email, data.password, data.name)
         
         print(f"[API] Registration successful for {user.email}")
@@ -92,7 +92,7 @@ async def login_user(
                 detail="Email and password are required"
             )
         
-        service = AuthService(db.session)
+        service = AuthService(db)  # Pass DBManager, not session
         user, token = await service.login(data.email, data.password)
         
         print(f"[API] Login successful for {user.email}")
@@ -301,7 +301,7 @@ async def add_friend(db: DBDep, user_id: int, current_user: UserModel = Depends(
         # Create friendship
         friendship = FriendshipModel(user_id=current_user.id, friend_id=user_id)
         db.session.add(friendship)
-        await db.session.commit()
+        await db.commit()
         
         return {"status": "OK", "message": "Friend added successfully"}
     except HTTPException:
@@ -338,7 +338,7 @@ async def remove_friend(db: DBDep, user_id: int, current_user: UserModel = Depen
             )
         
         await db.session.delete(friendship)
-        await db.session.commit()
+        await db.commit()
         
         return {"status": "OK", "message": "Friend removed successfully"}
     except HTTPException:
