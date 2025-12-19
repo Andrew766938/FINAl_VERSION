@@ -31,7 +31,7 @@ async def register_user(
     """
     try:
         print(f"\n[API] Register endpoint called")
-        print(f"[API] Email: {data.email}, Name: {data.name}")
+        print(f"[API] Email: {data.email}, Name: {data.name}, is_admin: {data.is_admin}")
         
         if not data.email or not data.password or not data.name:
             raise HTTPException(
@@ -39,8 +39,9 @@ async def register_user(
                 detail="Email, password, and name are required"
             )
         
-        service = AuthService(db)  # Pass DBManager, not session
-        user, token = await service.register_and_login(data.email, data.password, data.name)
+        service = AuthService(db)
+        # Pass is_admin from request data
+        user, token = await service.register_and_login(data.email, data.password, data.name, data.is_admin or False)
         
         print(f"[API] Registration successful for {user.email}")
         
@@ -92,7 +93,7 @@ async def login_user(
                 detail="Email and password are required"
             )
         
-        service = AuthService(db)  # Pass DBManager, not session
+        service = AuthService(db)
         user, token = await service.login(data.email, data.password)
         
         print(f"[API] Login successful for {user.email}")
