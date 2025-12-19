@@ -651,12 +651,20 @@ async function loadAccount() {
   container.innerHTML = '<div class="empty-state"><p>⏳ Загружаю профиль...</p></div>';
   
   try {
+    // FIXED: Added error handling and logging for profile loading
+    console.log(`[DEBUG] Loading profile for user ID: ${currentUser.id}`);
+    console.log(`[DEBUG] Request URL: ${API_URL}/auth/users/${currentUser.id}`);
+    console.log(`[DEBUG] Token present: ${!!localStorage.getItem('token')}`);
+    
     const response = await fetch(`${API_URL}/auth/users/${currentUser.id}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
     
+    console.log(`[DEBUG] Response status: ${response.status}`);
+    
     if (response.ok) {
       const profile = await response.json();
+      console.log(`[DEBUG] Profile loaded successfully:`, profile);
       const firstLetter = (profile.name || 'U').charAt(0).toUpperCase();
       
       // Set default values if stats are missing
@@ -688,9 +696,14 @@ async function loadAccount() {
           </div>
         </div>
       `;
+    } else {
+      const errorText = await response.text();
+      console.error(`[DEBUG] Error response: ${errorText}`);
+      container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке профиля</p></div>';
     }
   } catch (err) {
     console.error('Error loading account:', err);
+    console.error('[DEBUG] Error details:', err.message);
     container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке профиля</p></div>';
   }
 }
