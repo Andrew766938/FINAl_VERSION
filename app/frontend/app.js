@@ -659,6 +659,11 @@ async function loadAccount() {
       const profile = await response.json();
       const firstLetter = (profile.name || 'U').charAt(0).toUpperCase();
       
+      // Set default values if stats are missing
+      const postsCount = profile.posts_count ?? 0;
+      const friendsCount = profile.friends_count ?? 0;
+      const likesCount = profile.likes_count ?? 0;
+      
       container.innerHTML = `
         <div class="account-section">
           <div class="account-avatar">${firstLetter}</div>
@@ -668,15 +673,15 @@ async function loadAccount() {
             ${profile.is_admin ? '<div style="color: var(--secondary); font-weight: 600;">👑 Администратор</div>' : ''}
             <div class="account-stats">
               <div class="stat">
-                <div class="stat-value">${profile.posts_count}</div>
+                <div class="stat-value">${postsCount}</div>
                 <div class="stat-label">Постов</div>
               </div>
               <div class="stat">
-                <div class="stat-value">${profile.friends_count}</div>
+                <div class="stat-value">${friendsCount}</div>
                 <div class="stat-label">Друзей</div>
               </div>
               <div class="stat">
-                <div class="stat-value">${profile.likes_count}</div>
+                <div class="stat-value">${likesCount}</div>
                 <div class="stat-label">Лайков</div>
               </div>
             </div>
@@ -686,6 +691,7 @@ async function loadAccount() {
     }
   } catch (err) {
     console.error('Error loading account:', err);
+    container.innerHTML = '<div class="empty-state"><p>❌ Ошибка при загрузке профиля</p></div>';
   }
 }
 
