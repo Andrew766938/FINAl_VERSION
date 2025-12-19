@@ -43,13 +43,18 @@ async def register_user(
         user, token = await service.register_and_login(data.email, data.password, data.name)
         
         print(f"[API] ✅ Registration successful for {user.email}")
+        print(f"[API] User is_admin (DB): {user.is_admin} (type: {type(user.is_admin)})")
+        
+        is_admin_value = bool(user.is_admin) if user.is_admin is not None else False
+        print(f"[API] User is_admin (converted): {is_admin_value}")
+        
         return {
             "access_token": token,
             "user": {
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
-                "is_admin": user.is_admin or False,
+                "is_admin": is_admin_value,
             }
         }
     except ValueError as e:
@@ -78,6 +83,7 @@ async def login_user(
     """
     Login endpoint - accepts JSON body
     Returns access_token in response
+    FIXED: Explicitly convert is_admin to boolean
     """
     try:
         print(f"\n[API] 🚨 Login endpoint called")
@@ -94,7 +100,14 @@ async def login_user(
         user, token = await service.login(data.email, data.password)
         
         print(f"[API] ✅ Login successful for {user.email}")
-        print(f"[API] User is_admin: {user.is_admin}")
+        print(f"[API] User is_admin (DB): {user.is_admin} (type: {type(user.is_admin)})")
+        
+        # FIXED: Explicitly convert is_admin to boolean
+        # If is_admin is None or False, return False
+        # If is_admin is True (1 in SQLite), return True
+        is_admin_value = bool(user.is_admin) if user.is_admin is not None else False
+        print(f"[API] User is_admin (converted): {is_admin_value}")
+        
         # Set cookie as backup
         response.set_cookie("access_token", token, httponly=True, max_age=1800)
         
@@ -104,7 +117,7 @@ async def login_user(
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
-                "is_admin": user.is_admin or False,
+                "is_admin": is_admin_value,
             }
         }
     except ValueError as e:
@@ -129,11 +142,12 @@ async def get_me(db: DBDep, current_user: UserModel = Depends(get_current_user))
     """Get current authenticated user"""
     try:
         print(f"[API] 📁 Getting current user")
+        is_admin_value = bool(current_user.is_admin) if current_user.is_admin is not None else False
         return {
             "id": current_user.id,
             "username": current_user.name,
             "email": current_user.email,
-            "is_admin": current_user.is_admin or False,
+            "is_admin": is_admin_value,
         }
     except Exception as e:
         print(f"[API] ❌ Get me error: {e}")
@@ -155,11 +169,12 @@ async def get_user(db: DBDep, user_id: int) -> dict:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
+        is_admin_value = bool(user.is_admin) if user.is_admin is not None else False
         return {
             "id": user.id,
             "username": user.name,
             "email": user.email,
-            "is_admin": user.is_admin or False,
+            "is_admin": is_admin_value,
         }
     except HTTPException:
         raise
@@ -183,7 +198,7 @@ async def get_all_users(db: DBDep) -> list:
                 "id": user.id,
                 "username": user.name,
                 "email": user.email,
-                "is_admin": user.is_admin or False,
+                "is_admin": bool(user.is_admin) if user.is_admin is not None else False,
             }
             for user in (users or [])
         ]
