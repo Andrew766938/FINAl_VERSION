@@ -209,8 +209,8 @@ function showApp() {
 
 function updateUserDisplay() {
   if (currentUser) {
-    document.getElementById('currentUserName').textContent = currentUser.username || currentUser.name;
-    const firstLetter = (currentUser.username || currentUser.name).charAt(0).toUpperCase();
+    document.getElementById('currentUserName').textContent = currentUser.name || 'Пользователь';
+    const firstLetter = (currentUser.name || 'U').charAt(0).toUpperCase();
     document.getElementById('userAvatar').textContent = firstLetter;
   }
 }
