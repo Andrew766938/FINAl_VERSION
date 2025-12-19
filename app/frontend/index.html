@@ -165,6 +165,51 @@
       box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
     }
     
+    /* Checkbox styles */
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: rgba(168, 85, 247, 0.1);
+      border-radius: 10px;
+      border: 1px solid rgba(168, 85, 247, 0.2);
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(168, 85, 247, 0.5);
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    
+    .checkbox-group input[type="checkbox"]:checked {
+      background: var(--primary);
+      border-color: var(--primary-light);
+    }
+    
+    .checkbox-group input[type="checkbox"]:checked::after {
+      content: "✓";
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    
+    .checkbox-group label {
+      flex: 1;
+      margin-bottom: 0;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    
     .test-data-hint {
       background: rgba(16, 185, 129, 0.1);
       border: 1px solid rgba(16, 185, 129, 0.3);
@@ -1179,8 +1224,8 @@
         <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
           <div class="test-data-hint">
             💡 <strong>Легко войти для тестирования:</strong>
-            <div>👑 Админ: alice@betony.local / password123</div>
-            <div>👤 Обычный: test@betony.local / test123</div>
+            <div>👑 Админ: admin@betony.local / admin123</div>
+            <div>👤 Пользователь: test@betony.local / test123</div>
           </div>
           
           <div class="form-group">
@@ -1212,6 +1257,10 @@
           <div class="form-group">
             <label for="regPasswordConfirm">Подтвердите пароль</label>
             <input type="password" id="regPasswordConfirm" required placeholder="Повторите пароль">
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="regAdminCheckbox">
+            <label for="regAdminCheckbox">👑 Зарегистрироваться как администратор</label>
           </div>
           <div id="regStatus" style="display: none;"></div>
           <button type="submit" class="btn btn-primary" id="regBtn">Зарегистрироваться</button>
